@@ -27,40 +27,45 @@ object pushkaMacro {
 
     def implicitRWArgDef(n: Int) = TermName(s"rw$n")
 
-    def caseClassReader(className: TypeName, fields: List[ValDef]) = {
-      val withIndex = fields.zipWithIndex
-      val fReaders = withIndex map {
-        case (x, i) if checkValDefIsOption(x) ⇒
-          q"${x.name} = m.get(${x.name.toString}).flatMap(x => ${implicitRWArgDef(i)}.read(x))"
-        case (x, i) ⇒
-          q"${x.name} = ${implicitRWArgDef(i)}.read(m(${x.name.toString}))"
-      }
-      
-      q"""
-        value match {
-          case pushka.Value.Obj(m) => ${className.toTermName}(..$fReaders)
-          case _ ⇒ throw pushka.PushkaException()
-        }         
-      """
+    def caseClassReader(className: TypeName, fields: List[ValDef]) = fields match {
+      case field :: Nil ⇒
+        q"${className.toTermName}(${implicitRWArgDef(0)}.read(value))"
+      case _ ⇒
+        val withIndex = fields.zipWithIndex
+        val fReaders = withIndex map {
+          case (x, i) if checkValDefIsOption(x) ⇒
+            q"${x.name} = m.get(${x.name.toString}).flatMap(x => ${implicitRWArgDef(i)}.read(x))"
+          case (x, i) ⇒
+            q"${x.name} = ${implicitRWArgDef(i)}.read(m(${x.name.toString}))"
+        }
+        q"""
+          value match {
+            case pushka.Value.Obj(m) => ${className.toTermName}(..$fReaders)
+            case _ ⇒ throw pushka.PushkaException()
+          }
+        """
     }
 
-    def caseClassWriter(className: TypeName, fields: List[ValDef]) = {
-      def basicW(x: ValDef, i: Int) = {
-        q"${x.name.toString} -> ${implicitRWArgDef(i)}.write(value.${x.name})"
-      }
-      val (nonOpts, opts) = fields.zipWithIndex partition {
-        case (x, i) if checkValDefIsOption(x) ⇒ false
-        case (x, i) ⇒ true
-      }
-      val nonOptsWriters = nonOpts.map { case (x, i) ⇒ basicW(x, i) }
-      val optsWriters = opts map {
-        case (x, i) ⇒ q"if (value.${x.name}.isEmpty) None else Some(${basicW(x, i)})"
-      }
-      q"""
-        val opts = Seq(..$optsWriters).flatten
-        val xs = Seq(..$nonOptsWriters) ++ opts
-        pushka.Value.Obj(Map(xs:_*))
-      """
+    def caseClassWriter(className: TypeName, fields: List[ValDef]) = fields match {
+      case field :: Nil ⇒
+        q"${implicitRWArgDef(0)}.write(value.${field.name})"
+      case _ ⇒
+        def basicW(x: ValDef, i: Int) = {
+          q"${x.name.toString} -> ${implicitRWArgDef(i)}.write(value.${x.name})"
+        }
+        val (nonOpts, opts) = fields.zipWithIndex partition {
+          case (x, i) if checkValDefIsOption(x) ⇒ false
+          case (x, i) ⇒ true
+        }
+        val nonOptsWriters = nonOpts.map { case (x, i) ⇒ basicW(x, i) }
+        val optsWriters = opts map {
+          case (x, i) ⇒ q"if (value.${x.name}.isEmpty) None else Some(${basicW(x, i)})"
+        }
+        q"""
+          val opts = Seq(..$optsWriters).flatten
+          val xs = Seq(..$nonOptsWriters) ++ opts
+          pushka.Value.Obj(Map(xs:_*))
+        """
     }
 
     def caseClassRW(className: TypeName, typeParams: List[TypeDef], fields: List[ValDef]) = {
@@ -122,6 +127,7 @@ object pushkaMacro {
       
       // Matching on pushka.Value to find right
       // reader
+      // TODO Avoid match errors
       val readMatcher = Match(Ident(TermName("value")), names map {
         case Left(n) ⇒
           CaseDef(q"pushka.Value.Str(${jsonVariantConvention(n)})", q"$n")
@@ -142,6 +148,7 @@ object pushkaMacro {
       
       // Matching on pushka.Value to find right
       // writer
+      // TODO Avoid match errors
       val writeMatcher = Match(Ident(TermName("value")), names map {
         case Left(n) ⇒
           CaseDef(q"$n", q"pushka.Value.Str(${jsonVariantConvention(n)})")
