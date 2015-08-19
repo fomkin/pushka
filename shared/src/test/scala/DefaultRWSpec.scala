@@ -27,13 +27,13 @@ class DefaultRWSpec extends FlatSpec with Matchers {
   "Long" should "be read from string" in { read[Long](Value.Str("42")) should be(42l) }
   it should "be written to string" in { write(32l) should be(Value.Str("32")) }
   
-//  "Seq" should "be read from array" in {
-//    val source = Value.Arr(Seq(Value.Number(1), Value.Number(2), Value.Number(3)))
-//    val pattern = Seq(1, 2, 3)
-//    read[Seq[Int]](source) should be(pattern)
-//  }
+  "Seq" should "be read from array" in {
+    val source = Value.Arr(Seq(Value.Number(1), Value.Number(2), Value.Number(3)))
+    val pattern = Seq(1, 2, 3)
+    read[Seq[Int]](source) should be(pattern)
+  }
 
-  "Seq" should "be written to array" in {
+  it should "be written to array" in {
     val pattern = Value.Arr(Seq(Value.Number(1), Value.Number(2), Value.Number(3)))
     val source = Seq(1, 2, 3)
     write(source) should be(pattern)

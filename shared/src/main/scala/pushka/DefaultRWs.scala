@@ -73,13 +73,23 @@ class DefaultRWs {
     }
   }
 
-  implicit def iterable[T](implicit r: Reader[T], w: Writer[T]) = new RW[Iterable[T]] {
-    def read(value: Value): Iterable[T] = value match {
+  implicit def iterableW[T](implicit w: Writer[T]): Writer[Iterable[T]] = new Writer[Iterable[T]] {
+    def write(value: Iterable[T]): Value = {
+      Value.Arr(value.map(w.write).toSeq)
+    }
+  }
+
+  implicit def seqR[T](implicit r: Reader[T]): Reader[Seq[T]] = new Reader[Seq[T]] {
+    def read(value: Value): Seq[T] = value match {
       case Value.Arr(xs) ⇒ xs.map(r.read)
       case _ ⇒ throw PushkaException()
     }
-    def write(value: Iterable[T]): Value = {
-      Value.Arr(value.map(w.write).toSeq)
+  }
+
+  implicit def listR[T](implicit r: Reader[T]): Reader[List[T]] = new Reader[List[T]] {
+    def read(value: Value): List[T] = value match {
+      case Value.Arr(xs) ⇒ xs.map(r.read).toList
+      case _ ⇒ throw PushkaException()
     }
   }
 
