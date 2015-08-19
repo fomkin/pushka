@@ -13,14 +13,53 @@ class DefaultRWs {
     }
   }
 
+  implicit val boolean = new RW[Boolean] {
+    def read(value: Value): Boolean = value match {
+      case Value.Bool(x) ⇒ x
+      case _ ⇒ throw PushkaException()
+    }
+    def write(value: Boolean): Value = {
+      Value.Bool(value)
+    }
+  }
+
   implicit val int = new RW[Int] {
     def read(value: Value): Int = value match {
       case Value.Number(x) ⇒ x.toInt
       case _ ⇒ throw PushkaException()
     }
-
     def write(value: Int): Value = {
       Value.Number(value.toDouble)
+    }
+  }
+
+  implicit val double = new RW[Double] {
+    def read(value: Value): Double = value match {
+      case Value.Number(x) ⇒ x
+      case _ ⇒ throw PushkaException()
+    }
+    def write(value: Double): Value = {
+      Value.Number(value)
+    }
+  }
+
+  implicit val float = new RW[Float] {
+    def read(value: Value): Float = value match {
+      case Value.Number(x) ⇒ x.toFloat
+      case _ ⇒ throw PushkaException()
+    }
+    def write(value: Float): Value = {
+      Value.Number(value.toDouble)
+    }
+  }
+
+  implicit val long = new RW[Long] {
+    def read(value: Value): Long = value match {
+      case Value.Str(x) ⇒ x.toLong
+      case _ ⇒ throw PushkaException()
+    }
+    def write(value: Long): Value = {
+      Value.Str(value.toString)
     }
   }
 
@@ -33,6 +72,27 @@ class DefaultRWs {
       Value.Str(value)
     }
   }
+
+  implicit def iterable[T](implicit rw: RW[T]) = new RW[Iterable[T]] {
+    def read(value: Value): Iterable[T] = value match {
+      case Value.Arr(xs) ⇒ xs.map(rw.read)
+      case _ ⇒ throw PushkaException()
+    }
+    def write(value: Iterable[T]): Value = {
+      Value.Arr(value.map(rw.write).toSeq)
+    }
+  }
+
+//  implicit def mapRW[K, V](implicit rwK: RW[K], rwV: RW[V]) = new RW[Map[K, V]] {
+//    def read(value: Value): Map[K, V] = value match {
+//      case Value.Obj(m) if m.contains("keys") && m.contains("values") ⇒
+//        m("keys")
+//      case _ ⇒ throw PushkaException()
+//    }
+//    def write(value: Map[K, V]): Value = {
+//      Value.Arr(value.map(rw.write).toSeq)
+//    }
+//  }
 
   implicit def tuple2[A1, A2](implicit rw1: RW[A1], rw2: RW[A2]): RW[(A1, A2)] = new RW[(A1, A2)] {
     def read(value: Value): (A1, A2) = value match {
@@ -60,4 +120,5 @@ class DefaultRWs {
     }
   }
 
+  // TODO generate tuples?
 }
