@@ -2,14 +2,14 @@ package pushka
 
 class DefaultRWs {
 
-  implicit def option[T](implicit rw1: RW[T]): RW[Option[T]] = new RW[Option[T]] {
+  implicit def option[T](implicit r: Reader[T], w: Writer[T]): RW[Option[T]] = new RW[Option[T]] {
     def read(value: Value): Option[T] = value match {
       case Value.Null ⇒ None
-      case _ ⇒ Some(rw1.read(value))
+      case _ ⇒ Some(r.read(value))
     }
     def write(value: Option[T]): Value = value match {
       case None ⇒ Value.Null
-      case Some(x) ⇒ rw1.write(x)
+      case Some(x) ⇒ w.write(x)
     }
   }
 
@@ -73,26 +73,15 @@ class DefaultRWs {
     }
   }
 
-  implicit def iterable[T](implicit rw: RW[T]) = new RW[Iterable[T]] {
+  implicit def iterable[T](implicit r: Reader[T], w: Writer[T]) = new RW[Iterable[T]] {
     def read(value: Value): Iterable[T] = value match {
-      case Value.Arr(xs) ⇒ xs.map(rw.read)
+      case Value.Arr(xs) ⇒ xs.map(r.read)
       case _ ⇒ throw PushkaException()
     }
     def write(value: Iterable[T]): Value = {
-      Value.Arr(value.map(rw.write).toSeq)
+      Value.Arr(value.map(w.write).toSeq)
     }
   }
-
-//  implicit def mapRW[K, V](implicit rwK: RW[K], rwV: RW[V]) = new RW[Map[K, V]] {
-//    def read(value: Value): Map[K, V] = value match {
-//      case Value.Obj(m) if m.contains("keys") && m.contains("values") ⇒
-//        m("keys")
-//      case _ ⇒ throw PushkaException()
-//    }
-//    def write(value: Map[K, V]): Value = {
-//      Value.Arr(value.map(rw.write).toSeq)
-//    }
-//  }
 
   implicit def tuple2[A1, A2](implicit rw1: RW[A1], rw2: RW[A2]): RW[(A1, A2)] = new RW[(A1, A2)] {
     def read(value: Value): (A1, A2) = value match {

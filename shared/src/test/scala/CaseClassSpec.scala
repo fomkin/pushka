@@ -32,8 +32,8 @@ class CaseClassSpec extends FlatSpec with Matchers {
   }
 
   "Case classes with one filed" should "be written as value" in {
-    val source = Id(10)
-    write(source) should be(Value.Number(10))
+    val source = Id[String](10)
+    write[Id[String]](source) should be(Value.Number(10))
   }
 
   "Case classes with one filed" should "be read as value" in {
@@ -43,7 +43,7 @@ class CaseClassSpec extends FlatSpec with Matchers {
 
   "Option fields" should "be write without overhead" in {
     val pattern = Value.Obj(Map("y" → Value.Str("vodka")))
-    write(MyCaseClass2(None, "vodka")) should be(pattern)
+    write[MyCaseClass2](MyCaseClass2(None, "vodka")) should be(pattern)
   }
 
   "Option fields" should "be read without overhead" in {
