@@ -1,21 +1,33 @@
-### Pushka
+# Pushka
 
-Pushka is a pure Scala annotation based pickler implemented with macros without runtime reflection.
+Pushka is a pickler implemented without any runtime reflection. 
+We want to achieve high stability of pickling of
+complex structures and give pretty output without 
+service keywords and wrappers.   
 
-  * Scala 2.11 and Scala.js support
-  * Human-readable JSON printer (see bellow)
+  * Both Scala and Scala.js
+  * Sealed traits and case classes pickling 
+  * Most of standard scala data types pickling 
+  * Really human-readable output (see bellow)
   * Not only JSON. You can implement your own backend
 
-### Getting Started
+# Getting Started
 
-Pushka now in early development stage. So only local snapshots are available.
+Pushka now in *early development stage*. So only local snapshots are available. So you should install it by yourself
 
-Add the following to your SBT config:
+```bash
+git clone git@github.com:fomkin/pushka.git
+cd pushka
+sbt publish-local
+```
 
-    libraryDependencies ++= Seq(
-      "com.github.fomkin" %%% "pushka-core" % "0.1.0-SNAPSHOT"
-      "com.github.fomkin" %%% "pushka-json" % "0.1.0-SNAPSHOT"
-    )
+Configure SBT file:
+
+```scala
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
+
+libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.1.0-SNAPSHOT" 
+```
 
 Define case classes
 
@@ -34,8 +46,12 @@ import pushka.annotation._
 
 @pushka sealed trait User
 
+// Companion object is required for sealed traits.
 object User {
+  // Case classes and case object defined within
+  // companion object with be used for sealed trait pickling.
   case object Empty extends User
+  // BTW you can use this case classes alone (not case objects)
   case class Name(first: String, last: String) extends User
   case class Password(value: String) extends User
 }
@@ -47,7 +63,7 @@ Use it
 import pushka.json._
 
 write(Structure("a", Some("b"))) // { "field1": "a", "field2": "b" }
-write(SimpleStrcuture(42)) // 42
+write(SimpleStructure(42)) // 42
 
 write[User](User.Empty) // "empty"
 write[User](User.Name("John", "Doe")) // { "name": { "first": "John", "last": "Doe" } }
@@ -58,7 +74,7 @@ write[User](User.Password("boobs")) // { "password": "boobs" }
 import pushka.json._
 
 read[Structure](""" { "field1": "a" } """) //  Structure("a", None)
-read[SimpleStrcuture](42) // SimpleStrcuture(42)
+read[SimpleStructure](42) // SimpleStructure(42)
 
 read[User](""" "empty" """) // User.Empty
 read[User](""" { "name": { "first": "John", "last": "Doe" } } """) // User.Name("John", "Doe")
