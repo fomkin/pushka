@@ -17,7 +17,7 @@ final class Marshaller(val self: Value) extends AnyVal {
 
   @tailrec
   private[this] def objToJSONRec(tail: List[(String, Value)], acc: String = ""): String = {
-    @inline def w(key: String, value: String) = "\"" + key + "\"=" + value
+    @inline def w(key: String, value: String) = "\"" + key + "\":" + value
     (acc, tail) match {
       case (_, Nil) ⇒ acc
       case ("", (key, value) :: Nil) ⇒ w(key, toJSONInternal(value))

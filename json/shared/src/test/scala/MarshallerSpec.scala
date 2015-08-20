@@ -31,7 +31,7 @@ class MarshallerSpec extends FlatSpec with Matchers {
 
   "Obj" should "be marshaled" in {
     val source = Value.Obj(Map("x" → Value.Null, "y" → Value.Null))
-    source.toJSON shouldEqual "{\"x\"=null,\"y\"=null}"
+    source.toJSON shouldEqual "{\"x\":null,\"y\":null}"
   }
 
   "Arr" should "be marshaled" in {
