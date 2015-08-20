@@ -15,11 +15,12 @@ class DefaultRWs {
 
   implicit val boolean = new RW[Boolean] {
     def read(value: Value): Boolean = value match {
-      case Value.Bool(x) ⇒ x
+      case Value.True ⇒ true
+      case Value.False ⇒ false
       case _ ⇒ throw PushkaException()
     }
     def write(value: Boolean): Value = {
-      Value.Bool(value)
+      if (value) Value.True else Value.False
     }
   }
 

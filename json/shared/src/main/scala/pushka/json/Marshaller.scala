@@ -32,9 +32,10 @@ final class Marshaller(val self: Value) extends AnyVal {
     case Value.Arr(xs) ⇒ "[" + arrayToJSONRec(xs) + "]"
     case Value.Obj(m) ⇒ "{" + objToJSONRec(m.toList) + "}"
     case Value.Number(x) ⇒ x.toString
-    case Value.Bool(x) ⇒ x.toString
+    case Value.True ⇒ "true"
+    case Value.False ⇒ "false"
     case Value.Null ⇒ "null"
   }
 
-  def toJSON = toJSONInternal(self)
+  def toJSON: String = toJSONInternal(self)
 }

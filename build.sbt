@@ -17,9 +17,10 @@ lazy val core = crossProject.crossType(CrossType.Pure).
 lazy val coreJS = core.js
 lazy val coreJVM = core.jvm
 
-lazy val json = crossProject.crossType(CrossType.Pure).
+lazy val json = crossProject.crossType(CrossType.Full).
   settings(commonSettings:_*).
   settings(normalizedName := "pushka-json").
+  jvmSettings(libraryDependencies += "org.spire-math" %% "jawn-parser" % "0.8.3").
   dependsOn(core)
 
 lazy val jsonJS = json.js
