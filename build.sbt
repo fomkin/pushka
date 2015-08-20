@@ -4,7 +4,14 @@ val commonSettings = Seq(
   scalaVersion := "2.11.7",
   organization := "com.github.fomkin",
   version := "0.1.0-SNAPSHOT",
-  libraryDependencies += "org.scalatest" %%% "scalatest" % "3.0.0-M7" % "test"
+  libraryDependencies += "org.scalatest" %%% "scalatest" % "3.0.0-M7" % "test",
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-feature",
+    "-Xfatal-warnings",
+    "-language:postfixOps",
+    "-language:implicitConversions"
+  )
 )
 
 lazy val core = crossProject.crossType(CrossType.Pure).
@@ -12,7 +19,8 @@ lazy val core = crossProject.crossType(CrossType.Pure).
   settings(
     normalizedName := "pushka-core",
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full),
+    sourceGenerators in Compile <+= sourceManaged in Compile map GenTuples
   )
 
 lazy val coreJS = core.js

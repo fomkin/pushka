@@ -2,7 +2,7 @@ package pushka
 
 import java.util.UUID
 
-class DefaultRWs {
+class DefaultRWs extends Generated {
 
   implicit def optionRW[T](implicit r: Reader[T], w: Writer[T]): RW[Option[T]] = new RW[Option[T]] {
     def read(value: Ast): Option[T] = value match {
@@ -142,34 +142,4 @@ class DefaultRWs {
       }
     }
   }
-
-  implicit def tuple2[A1, A2](implicit rw1: RW[A1], rw2: RW[A2]): RW[(A1, A2)] = new RW[(A1, A2)] {
-    def read(value: Ast): (A1, A2) = value match {
-      case Ast.Arr(xs) if xs.length >= 2 ⇒
-        (rw1.read(xs.head), rw2.read(xs(1)))
-      case _ ⇒ throw PushkaException()
-    }
-
-    def write(value: (A1, A2)): Ast = {
-      Ast.Arr(List(rw1.write(value._1), rw2.write(value._2)))
-    }
-  }
-
-  implicit def tuple3[A1, A2, A3](implicit rw1: RW[A1], rw2: RW[A2], rw3: RW[A3]): RW[(A1, A2, A3)] = new RW[(A1, A2, A3)] {
-    def read(value: Ast): (A1, A2, A3) = value match {
-      case Ast.Arr(xs) if xs.length >= 3 ⇒
-        (rw1.read(xs.head), rw2.read(xs(1)), rw3.read(xs(2)))
-      case _ ⇒ throw PushkaException()
-    }
-
-    def write(value: (A1, A2, A3)): Ast = {
-      Ast.Arr(List(
-        rw1.write(value._1),
-        rw2.write(value._2),
-        rw3.write(value._3)
-      ))
-    }
-  }
-
-  // TODO generate tuples?
 }

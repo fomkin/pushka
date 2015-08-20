@@ -4,6 +4,15 @@ import pushka.annotation.pushka
 
 object SealedTraitSpec {
 
+  @pushka sealed trait WithBody {
+    def x: Int
+  }
+  
+  object WithBody {
+    case object A extends WithBody { val x = 0 }
+    case object B extends WithBody { val x = 1 }
+  }
+  
   @pushka sealed trait User
 
   object User {
@@ -18,7 +27,7 @@ class SealedTraitSpec extends FlatSpec with Matchers with TestKit {
 
   import SealedTraitSpec._
 
-  "Variant based on case class" should "writes by case class rules in property" in {
+  "ADT based on case class" should "writes by case class rules in property" in {
     val instance = Container(User.Name("John", "Doe"), 10)
     write(instance) should be(
       Ast.Obj(Map(
@@ -32,7 +41,7 @@ class SealedTraitSpec extends FlatSpec with Matchers with TestKit {
     )
   }
 
-  "Variant based on case object" should "writes as simple string" in {
+  "ADT based on case object" should "writes as simple string" in {
     val instance = Container(User.Empty, 10)
     write(instance) should be(
       Ast.Obj(Map(
@@ -40,5 +49,9 @@ class SealedTraitSpec extends FlatSpec with Matchers with TestKit {
         "anotherField" → Ast.Num(10.0))
       )
     )
+  }
+  
+  "Sealed trait with body" should "be processed" in {
+    write[WithBody](WithBody.A) shouldEqual Ast.Str("a")
   }
 }
