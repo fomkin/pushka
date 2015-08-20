@@ -1,5 +1,6 @@
 import org.scalatest._
 import pushka._
+import pushka.annotation.pushka
 
 object CaseClassSpec {
   @pushka case class MyCaseClass(x: Int, y: Int, z: String)
@@ -7,47 +8,47 @@ object CaseClassSpec {
   @pushka case class Id[+T](x: Int)
 }
 
-class CaseClassSpec extends FlatSpec with Matchers {
+class CaseClassSpec extends FlatSpec with Matchers with TestKit {
   
   import CaseClassSpec._
   
   "Case classes" should "writes correctly" in {
     val instance = MyCaseClass(10, 10, "vodka")
     val m = Map(
-      "x" → pushka.Value.Number(10), 
-      "y" → pushka.Value.Number(10),
-      "z" → pushka.Value.Str("vodka")
+      "x" → pushka.Ast.Num(10),
+      "y" → pushka.Ast.Num(10),
+      "z" → pushka.Ast.Str("vodka")
     )
-    write(instance) should be(pushka.Value.Obj(m))
+    write(instance) should be(pushka.Ast.Obj(m))
   }
 
   it should "reads correctly" in {
     val instance = MyCaseClass(10, 10, "vodka")
     val m = Map(
-      "x" → pushka.Value.Number(10),
-      "y" → pushka.Value.Number(10),
-      "z" → pushka.Value.Str("vodka")
+      "x" → pushka.Ast.Num(10),
+      "y" → pushka.Ast.Num(10),
+      "z" → pushka.Ast.Str("vodka")
     )
-    read[MyCaseClass](pushka.Value.Obj(m)) should be(instance)
+    read[MyCaseClass](pushka.Ast.Obj(m)) should be(instance)
   }
 
   "Case classes with one filed" should "be written as value" in {
     val source = Id[String](10)
-    write[Id[String]](source) should be(Value.Number(10))
+    write[Id[String]](source) should be(Ast.Num(10))
   }
 
   "Case classes with one filed" should "be read as value" in {
-    val source = Value.Number(10)
+    val source = Ast.Num(10)
     read[Id[String]](source) should be(Id[String](10))
   }
 
   "Option fields" should "be write without overhead" in {
-    val pattern = Value.Obj(Map("y" → Value.Str("vodka")))
+    val pattern = Ast.Obj(Map("y" → Ast.Str("vodka")))
     write[MyCaseClass2](MyCaseClass2(None, "vodka")) should be(pattern)
   }
 
   "Option fields" should "be read without overhead" in {
-    val source = Value.Obj(Map("y" → Value.Str("vodka")))
+    val source = Ast.Obj(Map("y" → Ast.Str("vodka")))
     val pattern = MyCaseClass2(None, "vodka")
     read[MyCaseClass2](source) should be(pattern)
   }

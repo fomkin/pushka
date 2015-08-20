@@ -1,23 +1,23 @@
 package pushka.json
 
 import jawn.SimpleFacade
-import pushka.Value
+import pushka.Ast
 
-object PushkaFacade extends SimpleFacade[Value] {
+object PushkaFacade extends SimpleFacade[Ast] {
   
-  def jarray(vs: List[Value]): Value = Value.Arr(vs)
+  def jarray(vs: List[Ast]): Ast = Ast.Arr(vs)
 
-  def jobject(vs: Map[String, Value]): Value = Value.Obj(vs)
+  def jobject(vs: Map[String, Ast]): Ast = Ast.Obj(vs)
 
-  def jint(s: String): Value = Value.Number(s.toDouble)
+  def jint(s: String): Ast = Ast.Num(s.toDouble)
 
-  def jfalse(): Value = Value.False
+  def jfalse(): Ast = Ast.False
 
-  def jnum(s: String): Value = Value.Number(s.toDouble)
+  def jnum(s: String): Ast = Ast.Num(s.toDouble)
 
-  def jnull(): Value = Value.Null
+  def jnull(): Ast = Ast.Null
 
-  def jtrue(): Value = Value.True
+  def jtrue(): Ast = Ast.True
 
-  def jstring(s: String): Value = Value.Str(s)
+  def jstring(s: String): Ast = Ast.Str(s)
 }

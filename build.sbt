@@ -21,7 +21,8 @@ lazy val json = crossProject.crossType(CrossType.Full).
   settings(commonSettings:_*).
   settings(
     normalizedName := "pushka-json",
-    unmanagedSourceDirectories in Test += baseDirectory.value / ".." / "test-src"
+    unmanagedSourceDirectories in Test += baseDirectory.value / ".." / "test-src",
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
   ).
   jvmSettings(libraryDependencies += "org.spire-math" %% "jawn-parser" % "0.8.3").
   dependsOn(core)

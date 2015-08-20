@@ -1,6 +1,6 @@
-package pushka
+package pushka.annotation
 
-import scala.annotation.{tailrec, StaticAnnotation}
+import scala.annotation.{StaticAnnotation, tailrec}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
@@ -42,7 +42,7 @@ object pushkaMacro {
         }
         q"""
           value match {
-            case pushka.Value.Obj(m) => ${className.toTermName}(..$fReaders)
+            case pushka.Ast.Obj(m) => ${className.toTermName}(..$fReaders)
             case _ ⇒ throw pushka.PushkaException()
           }
         """
@@ -66,7 +66,7 @@ object pushkaMacro {
         q"""
           val opts = Seq(..$optsWriters).flatten
           val xs = Seq(..$nonOptsWriters) ++ opts
-          pushka.Value.Obj(Map(xs:_*))
+          pushka.Ast.Obj(Map(xs:_*))
         """
     }
 
@@ -87,8 +87,8 @@ object pushkaMacro {
         case Nil ⇒
           q"""
             implicit def _rw(implicit ..$rws): pushka.RW[$className] = new pushka.RW[$className] {
-              def read(value: pushka.Value) = $reader
-              def write(value: $className): pushka.Value = $writer
+              def read(value: pushka.Ast) = $reader
+              def write(value: $className): pushka.Ast = $writer
             }
           """
         case xs ⇒
@@ -98,8 +98,8 @@ object pushkaMacro {
           
           q"""
             implicit def _rw[..$tDefs](implicit ..$rws): pushka.RW[$className[..$tParams]] = new pushka.RW[$className[..$tParams]] {
-              def read(value: pushka.Value) = $reader
-              def write(value: $className[..$tParams]): pushka.Value = $writer
+              def read(value: pushka.Ast) = $reader
+              def write(value: $className[..$tParams]): pushka.Ast = $writer
             }
           """
       }
@@ -133,12 +133,12 @@ object pushkaMacro {
         case q"case class $n(..$fields) extends ..$p" if checkBases(p) ⇒ Right(n)
       }
       
-      // Matching on pushka.Value to find right
+      // Matching on pushka.Ast to find right
       // reader
       // TODO Avoid match errors
       val readMatcher = Match(Ident(TermName("value")), names map {
         case Left(n) ⇒
-          CaseDef(q"pushka.Value.Str(${jsonVariantConvention(n)})", q"$n")
+          CaseDef(q"pushka.Ast.Str(${jsonVariantConvention(n)})", q"$n")
         case Right(n) ⇒
           val lower = jsonVariantConvention(n)
           CaseDef(
@@ -146,7 +146,7 @@ object pushkaMacro {
               TermName("o"),
               Typed(
                 Ident(termNames.WILDCARD),
-                TypeTree(typeOf[pushka.Value.Obj])
+                TypeTree(typeOf[pushka.Ast.Obj])
               )
             ),
             q"o.value.contains($lower)",
@@ -154,26 +154,26 @@ object pushkaMacro {
           )
       })
       
-      // Matching on pushka.Value to find right
+      // Matching on pushka.Ast to find right
       // writer
       // TODO Avoid match errors
       val writeMatcher = Match(Ident(TermName("value")), names map {
         case Left(n) ⇒
-          CaseDef(q"$n", q"pushka.Value.Str(${jsonVariantConvention(n)})")
+          CaseDef(q"$n", q"pushka.Ast.Str(${jsonVariantConvention(n)})")
         case Right(n) ⇒
           val lower = jsonVariantConvention(n)
           CaseDef(
             Bind(TermName("o"), Typed(Ident(termNames.WILDCARD), Ident(n))),
-            q"pushka.Value.Obj(Map($lower -> ${n.toTermName}._rw.write(o)))"
+            q"pushka.Ast.Obj(Map($lower -> ${n.toTermName}._rw.write(o)))"
           )
       })
 
       q"""
         object ${traitName.toTermName} { 
           ..$updatedBody
-          implicit val _rw: RW[$traitName] = new RW[$traitName] {
-            def read(value: pushka.Value) = $readMatcher
-            def write(value: $traitName): pushka.Value = $writeMatcher
+          implicit val _rw: pushka.RW[$traitName] = new pushka.RW[$traitName] {
+            def read(value: pushka.Ast) = $readMatcher
+            def write(value: $traitName): pushka.Ast = $writeMatcher
           }
         }
        """

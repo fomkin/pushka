@@ -1,13 +1,13 @@
 package pushka.json
 
-import pushka.Value
+import pushka.{Printer, Ast}
 
 import scala.annotation.tailrec
 
-final class Marshaller(val self: Value) extends AnyVal {
+final class JsonPrinter extends Printer[String] {
 
   @tailrec
-  private[this] def arrayToJSONRec(tail: List[Value], acc: String = ""): String = (acc, tail) match {
+  private[this] def arrayToJSONRec(tail: List[Ast], acc: String = ""): String = (acc, tail) match {
     case (_, Nil) ⇒ acc
     case ("", x :: Nil) ⇒ toJSONInternal(x)
     case ("", x :: xs) ⇒ arrayToJSONRec(xs, toJSONInternal(x))
@@ -16,7 +16,7 @@ final class Marshaller(val self: Value) extends AnyVal {
   }
 
   @tailrec
-  private[this] def objToJSONRec(tail: List[(String, Value)], acc: String = ""): String = {
+  private[this] def objToJSONRec(tail: List[(String, Ast)], acc: String = ""): String = {
     @inline def w(key: String, value: String) = "\"" + key + "\":" + value
     (acc, tail) match {
       case (_, Nil) ⇒ acc
@@ -27,15 +27,15 @@ final class Marshaller(val self: Value) extends AnyVal {
     }
   }
 
-  private[this] def toJSONInternal(v: Value): String = v match {
-    case Value.Str(x) ⇒ "\"" + x + "\""
-    case Value.Arr(xs) ⇒ "[" + arrayToJSONRec(xs) + "]"
-    case Value.Obj(m) ⇒ "{" + objToJSONRec(m.toList) + "}"
-    case Value.Number(x) ⇒ x.toString
-    case Value.True ⇒ "true"
-    case Value.False ⇒ "false"
-    case Value.Null ⇒ "null"
+  private[this] def toJSONInternal(v: Ast): String = v match {
+    case Ast.Str(x) ⇒ "\"" + x + "\""
+    case Ast.Arr(xs) ⇒ "[" + arrayToJSONRec(xs) + "]"
+    case Ast.Obj(m) ⇒ "{" + objToJSONRec(m.toList) + "}"
+    case Ast.Num(x) ⇒ x.toString
+    case Ast.True ⇒ "true"
+    case Ast.False ⇒ "false"
+    case Ast.Null ⇒ "null"
   }
 
-  def toJSON: String = toJSONInternal(self)
+  def print(ast: Ast): String = toJSONInternal(ast)
 }

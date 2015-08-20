@@ -1,5 +1,6 @@
 import org.scalatest._
 import pushka._
+import pushka.annotation.pushka
 
 object SealedTraitSpec {
 
@@ -13,20 +14,20 @@ object SealedTraitSpec {
   @pushka case class Container(user: User, anotherField: Int)
 }
 
-class SealedTraitSpec extends FlatSpec with Matchers {
+class SealedTraitSpec extends FlatSpec with Matchers with TestKit {
 
   import SealedTraitSpec._
 
   "Variant based on case class" should "writes by case class rules in property" in {
     val instance = Container(User.Name("John", "Doe"), 10)
     write(instance) should be(
-      Value.Obj(Map(
-        "user" → Value.Obj(Map(
-          "name" → Value.Obj(Map(
-            "first" → Value.Str("John"),
-            "last" → Value.Str("Doe"))
+      Ast.Obj(Map(
+        "user" → Ast.Obj(Map(
+          "name" → Ast.Obj(Map(
+            "first" → Ast.Str("John"),
+            "last" → Ast.Str("Doe"))
           ))),
-        "anotherField" → Value.Number(10.0)
+        "anotherField" → Ast.Num(10.0)
       ))
     )
   }
@@ -34,9 +35,9 @@ class SealedTraitSpec extends FlatSpec with Matchers {
   "Variant based on case object" should "writes as simple string" in {
     val instance = Container(User.Empty, 10)
     write(instance) should be(
-      Value.Obj(Map(
-        "user" → Value.Str("empty"),
-        "anotherField" → Value.Number(10.0))
+      Ast.Obj(Map(
+        "user" → Ast.Str("empty"),
+        "anotherField" → Ast.Num(10.0))
       )
     )
   }
