@@ -3,6 +3,7 @@ resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
 val commonSettings = Seq(
   scalaVersion := "2.11.7",
   organization := "com.github.fomkin",
+  version := "0.1.0-SNAPSHOT",
   libraryDependencies += "org.scalatest" %%% "scalatest" % "3.0.0-M7" % "test"
 )
 
