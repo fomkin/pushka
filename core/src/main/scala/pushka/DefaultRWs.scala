@@ -31,6 +31,16 @@ class DefaultRWs extends Generated {
     }
   }
 
+  implicit val astRW = new RW[Ast] {
+    def read(value: Ast): Ast = value
+    def write(value: Ast): Ast = value
+  }
+
+  implicit val unitRW = new RW[Unit] {
+    def read(value: Ast): Unit = ()
+    def write(value: Unit): Ast = Ast.Str("_")
+  }
+
   implicit val booleanRW = new RW[Boolean] {
     def read(value: Ast): Boolean = value match {
       case Ast.True ⇒ true
