@@ -4,7 +4,15 @@ import pushka.{Printer, Ast}
 
 import scala.annotation.tailrec
 
+private object JsonPrinter {
+  val Quote = "\""
+  val QuoteChar = Quote.charAt(0)
+  val QuoteEscaped = "\\\""
+}
+
 final class JsonPrinter extends Printer[String] {
+
+  import JsonPrinter._
 
   @tailrec
   private[this] def arrayToJSONRec(tail: List[Ast], acc: String = ""): String = (acc, tail) match {
@@ -28,7 +36,7 @@ final class JsonPrinter extends Printer[String] {
   }
 
   private[this] def toJSONInternal(v: Ast): String = v match {
-    case Ast.Str(x) ⇒ "\"" + x + "\""
+    case Ast.Str(s) ⇒ "\"" + s.replace(Quote, QuoteEscaped) + "\""
     case Ast.Arr(xs) ⇒ "[" + arrayToJSONRec(xs) + "]"
     case Ast.Obj(m) ⇒ "{" + objToJSONRec(m.toList) + "}"
     case Ast.Num(x) ⇒ x.toString

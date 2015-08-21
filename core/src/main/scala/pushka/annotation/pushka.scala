@@ -202,17 +202,11 @@ object pushkaMacro {
     def modifiedDeclaration(classDecl: ClassDef, compDeclOpt: Option[ModuleDef] = None) = {
       val compDecl = classDecl match {
         case q"case class $className[..$typeParams](..$fields) extends ..$bases { ..$body }" ⇒
-          //println("4" + show(classDecl))
           val rw = caseClassRW(className, typeParams, fields)
           modifiedCompanion(compDeclOpt, rw, className)
         case q"case class $className(..$fields) extends ..$bases { ..$body }" ⇒
-          //println("3" + show(classDecl))
           val rw = caseClassRW(className, Nil, fields)
           modifiedCompanion(compDeclOpt, rw, className)
-//        case q"sealed abstract trait $traitName extends ..$bases { ..$body }" ⇒
-//          genSealedTrait(traitName)
-//        case q"sealed abstract trait $traitName extends ..$bases" ⇒
-//          genSealedTrait(traitName)
         case ClassDef(mods, traitName, _, _) if mods.hasFlag(Flag.SEALED) && mods.hasFlag(Flag.TRAIT) ⇒
           compDeclOpt match {
             case Some(x) ⇒ sealedTraitRW(traitName, x)

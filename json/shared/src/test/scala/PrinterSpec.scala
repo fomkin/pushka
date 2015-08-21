@@ -12,6 +12,11 @@ class PrinterSpec extends FlatSpec with Matchers {
     printer.print(Ast.Str("hello")) should be("\"hello\"")
   }
 
+  it should "escape quotes" in {
+    printer.print(Ast.Str("""{ "x": "y" }""")) shouldEqual {
+      """"{ \"x\": \"y\" }""""
+    }
+  }
   // TODO different behavior between JVM and JS
   //  "Number" should "be printed" in {
   //    Value.Number(42).toJSON should be("42.0")
