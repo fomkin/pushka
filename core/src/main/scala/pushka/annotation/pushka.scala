@@ -28,20 +28,16 @@ object pushkaMacro {
       }
     }
 
-    def readerN(n: Int) = TermName(s"r$n")
-
-    def writerN(n: Int) = TermName(s"w$n")
-
     def caseClassReader(className: TypeName, fields: List[ValDef]) = fields match {
       case field :: Nil ⇒
-        q"${className.toTermName}(${readerN(0)}.read(value))"
+        q"${className.toTermName}(pushka.read[${field.tpt}](value))"
       case _ ⇒
-        val withIndex = fields.zipWithIndex
-        val fReaders = withIndex map {
-          case (x, i) if checkValDefIsOption(x) ⇒
-            q"${x.name} = m.get(${x.name.toString}).flatMap(x => ${readerN(i)}.read(x))"
-          case (x, i) ⇒
-            q"${x.name} = ${readerN(i)}.read(m(${x.name.toString}))"
+        val fReaders = fields map { x ⇒
+          if (checkValDefIsOption(x)) {
+            q"${x.name} = m.get(${x.name.toString}).flatMap(x => pushka.read[${x.tpt}](x))"
+          } else {
+            q"${x.name} = pushka.read[${x.tpt}](m(${x.name.toString}))"
+          }
         }
         q"""
           value match {
@@ -53,18 +49,15 @@ object pushkaMacro {
 
     def caseClassWriter(className: TypeName, fields: List[ValDef]) = fields match {
       case field :: Nil ⇒
-        q"${writerN(0)}.write(value.${field.name})"
+        q"pushka.write(value.${field.name})"
       case _ ⇒
-        def basicW(x: ValDef, i: Int) = {
-          q"${x.name.toString} -> ${writerN(i)}.write(value.${x.name})"
+        def basicW(x: ValDef) = {
+          q"${x.name.toString} -> pushka.write(value.${x.name})"
         }
-        val (nonOpts, opts) = fields.zipWithIndex partition {
-          case (x, i) if checkValDefIsOption(x) ⇒ false
-          case (x, i) ⇒ true
-        }
-        val nonOptsWriters = nonOpts.map { case (x, i) ⇒ basicW(x, i) }
-        val optsWriters = opts map {
-          case (x, i) ⇒ q"if (value.${x.name}.isEmpty) None else Some(${basicW(x, i)})"
+        val (nonOpts, opts) = fields.partition(!checkValDefIsOption(_))
+        val nonOptsWriters = nonOpts.map(basicW(_))
+        val optsWriters = opts map { x ⇒ 
+          q"if (value.${x.name}.isEmpty) None else Some(${basicW(x)})"
         }
         q"""
           val opts = Seq(..$optsWriters).flatten
@@ -74,35 +67,36 @@ object pushkaMacro {
     }
 
     def caseClassRW(className: TypeName, typeParams: List[TypeDef], fields: List[ValDef]) = {
-      @tailrec
-      def makeRWsRec(i: Int, acc: List[Tree], tl: List[ValDef]): List[Tree] = tl match {
-        case x :: xs ⇒
-          val r = q"${readerN(i)}: pushka.Reader[${x.tpt}]"
-          val w = q"${writerN(i)}: pushka.Writer[${x.tpt}]"
-          makeRWsRec(i+1, r :: w :: acc, xs)
-        case Nil ⇒ acc
-      }
-      val rws = makeRWsRec(0, Nil, fields)
       val reader = caseClassReader(className, fields)
       val writer = caseClassWriter(className, fields)
       
       typeParams match {
         case Nil ⇒
           q"""
-            implicit def _rw(implicit ..$rws): pushka.RW[$className] = new pushka.RW[$className] {
+            implicit val _rw: pushka.RW[$className] = new pushka.RW[$className] {
               def read(value: pushka.Ast) = $reader
               def write(value: $className): pushka.Ast = $writer
             }
           """
-        case xs ⇒
-          
-          val tDefs = xs.map(x ⇒ TypeDef(Modifiers(), TypeName(x.name.toString), Nil, x.rhs))
-          val tParams = tDefs.map(_.name)
-          
+        case _ ⇒
+          @tailrec
+          def makeRWsRec(i: Int, acc: List[Tree], tl: List[ValDef]): List[Tree] = tl match {
+            case x :: xs ⇒
+              val (ri, wi) = (TermName("r" + i), TermName("w" + i))
+              val r = q"$ri : pushka.Reader[${x.tpt}]"
+              val w = q"$wi : pushka.Writer[${x.tpt}]"
+              makeRWsRec(i + 1, r :: w :: acc, xs)
+            case Nil ⇒ acc
+          }
+          val rws = makeRWsRec(0, Nil, fields)
+          val defs = typeParams.map(x ⇒ TypeDef(Modifiers(), TypeName(x.name.toString), Nil, x.rhs))
+          val params = defs.map(_.name)
           q"""
-            implicit def _rw[..$tDefs](implicit ..$rws): pushka.RW[$className[..$tParams]] = new pushka.RW[$className[..$tParams]] {
-              def read(value: pushka.Ast) = $reader
-              def write(value: $className[..$tParams]): pushka.Ast = $writer
+            implicit def _rw[..$defs](implicit ..$rws): pushka.RW[$className[..$params]] = {
+              new pushka.RW[$className[..$params]] {
+                def read(value: pushka.Ast) = $reader
+                def write(value: $className[..$params]): pushka.Ast = $writer
+              }
             }
           """
       }

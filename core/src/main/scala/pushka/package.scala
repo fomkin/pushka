@@ -12,4 +12,8 @@ package object pushka extends DefaultRWs {
     def write(value: T): Ast
   }
 
+  def read[T](data: Ast)(implicit r: Reader[T]): T = r.read(data)
+
+  def write[T](value: T)(implicit w: Writer[T]): Ast = w.write(value)
+
 }
