@@ -15,20 +15,16 @@ service keywords and wrappers.
 
 # Getting Started
 
-Pushka now in *early development stage*. So only local snapshots are available. So you should install it by yourself
-
-```bash
-git clone git@github.com:fomkin/pushka.git
-cd pushka
-sbt publish-local
-```
-
-Configure SBT file:
+Configure SBT file
 
 ```scala
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
 
-libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.1.0-SNAPSHOT" 
+// For Scala.js
+libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.1.0"
+
+// For Scala.jvm
+libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.1.0"
 ```
 
 Define case classes
