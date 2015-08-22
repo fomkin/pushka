@@ -1,5 +1,7 @@
 # Pushka
 
+[![Build Status](https://travis-ci.org/fomkin/pushka.svg?branch=develop)](https://travis-ci.org/fomkin/pushka)
+
 Pushka is a pickler implemented without any runtime reflection. 
 We want to achieve high stability of pickling of
 complex structures and give pretty output without 
