@@ -1,27 +1,40 @@
-resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
+val publishSettings = Seq(
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := { _ => false },
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value) Some("snapshots" at s"${nexus}content/repositories/snapshots")
+    else Some("releases" at s"${nexus}service/local/staging/deploy/maven2")
+  },
+  pomExtra := {
+    <url>https://github.com/fomkin/pushka</url>
+    <licenses>
+      <license>
+        <name>Apache License, Version 2.0</name>
+        <url>http://apache.org/licenses/LICENSE-2.0</url>
+        <distribution>repo</distribution>
+      </license>
+    </licenses>
+    <scm>
+      <url>git@github.com:fomkin/pushka.git</url>
+      <connection>scm:git:git@github.com:fomkin/pushka.git</connection>
+    </scm>
+    <developers>
+      <developer>
+        <id>fomkin</id>
+        <name>Aleksey Fomkin</name>
+        <email>aleksey.fomkin@gmail.com</email>
+      </developer>
+    </developers>
+  }
+)
 
-val pushkaVersion = "0.1.0-SNAPSHOT"
-
-val publishSettings = if (pushkaVersion.endsWith("SNAPSHOT")) {
-  Seq(
-    publishTo := Some("Flexis Thirdparty Snapshots" at "https://nexus.flexis.ru/content/repositories/thirdparty-snapshots"),
-    credentials += {
-      val ivyHome = sys.props.get("sbt.ivy.home") match {
-        case Some(path) ⇒ file(path)
-        case None ⇒ Path.userHome / ".ivy2"
-      }
-      Credentials(ivyHome / ".credentials")
-    }
-  )
-}
-else {
-  Seq()
-}
 
 val commonSettings = publishSettings ++ Seq(
   scalaVersion := "2.11.7",
   organization := "com.github.fomkin",
-  version := pushkaVersion,
+  version := "0.1.0-SNAPSHOT",
   libraryDependencies += "org.scalatest" %%% "scalatest" % "3.0.0-M7" % "test",
   scalacOptions ++= Seq(
     "-deprecation",
@@ -41,7 +54,6 @@ lazy val core = crossProject.crossType(CrossType.Pure).
     sourceGenerators in Compile <+= sourceManaged in Compile map GenTuples
   )
 
-
 lazy val coreJS = core.js
 lazy val coreJVM = core.jvm
 
@@ -49,8 +61,7 @@ lazy val json = crossProject.crossType(CrossType.Full).
   settings(commonSettings: _*).
   settings(
     normalizedName := "pushka-json",
-    unmanagedSourceDirectories in Test += baseDirectory.value / ".." / "test-src",
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
+    unmanagedSourceDirectories in Test += baseDirectory.value / ".." / "test-src"
   ).
   jvmSettings(libraryDependencies += "org.spire-math" %% "jawn-parser" % "0.8.3").
   dependsOn(core)
@@ -58,5 +69,6 @@ lazy val json = crossProject.crossType(CrossType.Full).
 lazy val jsonJS = json.js
 lazy val jsonJVM = json.jvm
 
-// Do not publish root project
-publish := {}
+publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
+
+publishArtifact := false
