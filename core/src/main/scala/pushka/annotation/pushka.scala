@@ -80,17 +80,17 @@ object pushkaMacro {
           """
         case _ ⇒
           @tailrec
-          def makeRWsRec(i: Int, acc: List[Tree], tl: List[ValDef]): List[Tree] = tl match {
+          def makeRWsRec(i: Int, acc: List[Tree], tl: List[TypeName]): List[Tree] = tl match {
             case x :: xs ⇒
               val (ri, wi) = (TermName("r" + i), TermName("w" + i))
-              val r = q"$ri : pushka.Reader[${x.tpt}]"
-              val w = q"$wi : pushka.Writer[${x.tpt}]"
+              val r = q"$ri : pushka.Reader[$x]"
+              val w = q"$wi : pushka.Writer[$x]"
               makeRWsRec(i + 1, r :: w :: acc, xs)
             case Nil ⇒ acc
           }
-          val rws = makeRWsRec(0, Nil, fields)
           val defs = typeParams.map(x ⇒ TypeDef(Modifiers(), TypeName(x.name.toString), Nil, x.rhs))
           val params = defs.map(_.name)
+          val rws = makeRWsRec(0, Nil, params)
           q"""
             implicit def _rw[..$defs](implicit ..$rws): pushka.RW[$className[..$params]] = {
               new pushka.RW[$className[..$params]] {

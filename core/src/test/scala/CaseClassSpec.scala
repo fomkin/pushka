@@ -6,6 +6,7 @@ object CaseClassSpec {
   @pushka case class MyCaseClass(x: Int, y: Int, z: String)
   @pushka case class MyCaseClass2(x: Option[String], y: String)
   @pushka case class Id[+T](x: Int)
+  @pushka case class Point[T](x: T, y: T)
 }
 
 class CaseClassSpec extends FlatSpec with Matchers with TestKit {
@@ -37,9 +38,21 @@ class CaseClassSpec extends FlatSpec with Matchers with TestKit {
     write[Id[String]](source) should be(Ast.Num(10))
   }
 
-  "Case classes with one filed" should "be read as value" in {
+  it should "be read as value" in {
     val source = Ast.Num(10)
     read[Id[String]](source) should be(Id[String](10))
+  }
+
+  "Generic case class" should "be written" in {
+    val source = Point[Float](10, 10)
+    val pattern = Ast("x" → 10.0, "y" → 10.0)
+    write(source) shouldEqual pattern
+  }
+
+  "Generic case class" should "be read" in {
+    val source = Ast("x" → 10.0, "y" → 10.0)
+    val pattern = Point[Float](10, 10)
+    read[Point[Float]](source) shouldEqual pattern
   }
 
   "Option fields" should "be write without overhead" in {
