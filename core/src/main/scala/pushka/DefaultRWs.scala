@@ -119,13 +119,18 @@ class DefaultRWs extends Generated {
 
   implicit def iterableW[T](implicit w: Writer[T]): Writer[Iterable[T]] = new Writer[Iterable[T]] {
     def write(value: Iterable[T]): Ast = {
-      Ast.Arr(value.map(w.write).toList)
+      val b = collection.mutable.Buffer.empty[Ast]
+      val iter = value.iterator
+      while (iter.hasNext) {
+        b += w.write(iter.next())
+      }
+      Ast.Arr(b)
     }
   }
 
   implicit def seqR[T](implicit r: Reader[T]): Reader[Seq[T]] = new Reader[Seq[T]] {
     def read(value: Ast): Seq[T] = value match {
-      case Ast.Arr(xs) ⇒ xs.map(r.read)
+      case Ast.Arr(xs) ⇒ xs.map(r.read).toSeq
       case _ ⇒ throw PushkaException()
     }
   }
@@ -139,7 +144,7 @@ class DefaultRWs extends Generated {
 
   implicit def listR[T](implicit r: Reader[T]): Reader[List[T]] = new Reader[List[T]] {
     def read(value: Ast): List[T] = value match {
-      case Ast.Arr(xs) ⇒ xs.map(r.read)
+      case Ast.Arr(xs) ⇒ xs.map(r.read).toList
       case _ ⇒ throw PushkaException()
     }
   }
@@ -147,7 +152,7 @@ class DefaultRWs extends Generated {
   implicit def mapR[K, V](implicit r: Reader[(K, V)]): Reader[Map[K, V]] = {
     new Reader[Map[K, V]] {
       def read(value: Ast): Map[K, V] = value match {
-        case Ast.Arr(xs) ⇒ xs.map(r.read).toMap
+        case Ast.Arr(xs) ⇒ (for (x ← xs) yield r.read(x)).toMap
         case _ ⇒ throw PushkaException()
       }
     }

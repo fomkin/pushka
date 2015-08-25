@@ -9,16 +9,17 @@ object GenTuples extends (File ⇒ Seq[File]) {
       val typeArgs = range.map("T"+_.toString).toSeq
       val typeArgsJ = typeArgs.mkString(", ")
       val rws = range.map(n ⇒ s"rw$n: RW[${typeArgs(n-1)}]").mkString(", ")
-      val readers = range.map(n ⇒ s"rw$n.read(xs(${n-1}))")
+      val readers = range.map(n ⇒ s"rw$n.read(xsi.next())")
       val writers = range.map(n ⇒ s"rw$n.write(value._$n)")
       s"""  implicit def tuple$n[$typeArgsJ](implicit $rws): RW[($typeArgsJ)] = new RW[($typeArgsJ)] {
          |    def read(value: Ast): ($typeArgsJ) = value match {
-         |      case Ast.Arr(xs) if xs.length >= $n ⇒
+         |      case Ast.Arr(xs) ⇒
+         |        val xsi = xs.iterator
          |        (${readers.mkString(", ")})
          |      case _ ⇒ throw PushkaException()
          |    }
          |    def write(value: ($typeArgsJ)): Ast = {
-         |      Ast.Arr(List(${writers.mkString(", ")}))
+         |      Ast.Arr(Vector(${writers.mkString(", ")}))
          |    }
          |  }
        """.stripMargin

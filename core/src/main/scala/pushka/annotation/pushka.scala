@@ -51,18 +51,17 @@ object pushkaMacro {
       case field :: Nil ⇒
         q"pushka.write(value.${field.name})"
       case _ ⇒
-        def basicW(x: ValDef) = {
-          q"${x.name.toString} -> pushka.write(value.${x.name})"
-        }
+        def basicW(x: ValDef) = q"${x.name.toString} -> pushka.write(value.${x.name})"
         val (nonOpts, opts) = fields.partition(!checkValDefIsOption(_))
-        val nonOptsWriters = nonOpts.map(basicW(_))
+        val nonOptsWriters = nonOpts.map(x ⇒ q"b.append(${basicW(x)})")
         val optsWriters = opts map { x ⇒ 
-          q"if (value.${x.name}.isEmpty) None else Some(${basicW(x)})"
+          q"if (value.${x.name}.nonEmpty) b.append(${basicW(x)})"
         }
         q"""
-          val opts = Seq(..$optsWriters).flatten
-          val xs = Seq(..$nonOptsWriters) ++ opts
-          pushka.Ast.Obj(Map(xs:_*))
+          val b = scala.collection.mutable.Buffer.empty[(String, pushka.Ast)]
+          ..$optsWriters
+          ..$nonOptsWriters
+          pushka.Ast.Obj(b.toMap)
         """
     }
 

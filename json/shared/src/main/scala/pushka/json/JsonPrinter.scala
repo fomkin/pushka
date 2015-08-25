@@ -1,49 +1,91 @@
 package pushka.json
 
-import pushka.{Printer, Ast}
+import pushka.{Ast, Printer}
 
-import scala.annotation.tailrec
+import scala.annotation.switch
 
-private object JsonPrinter {
-  val Quote = "\""
-  val QuoteChar = Quote.charAt(0)
-  val QuoteEscaped = "\\\""
-}
-
+/**
+ * Port of Upickle printer
+ * https://github.com/lihaoyi/upickle-pprint/blob/master/upickle/jvm/src/main/scala/upickle/json/Jawn.scala
+ */
 final class JsonPrinter extends Printer[String] {
-
-  import JsonPrinter._
-
-  @tailrec
-  private[this] def arrayToJSONRec(tail: List[Ast], acc: String = ""): String = (acc, tail) match {
-    case (_, Nil) ⇒ acc
-    case ("", x :: Nil) ⇒ toJSONInternal(x)
-    case ("", x :: xs) ⇒ arrayToJSONRec(xs, toJSONInternal(x))
-    case (_, x :: Nil) ⇒ acc + "," + toJSONInternal(x)
-    case (_, x :: xs) ⇒ arrayToJSONRec(xs, acc + "," + toJSONInternal(x))
+  
+  def print(jv: Ast): String = {
+    val sb = new StringBuilder
+    render(sb, 0, jv)
+    sb.toString()
   }
 
-  @tailrec
-  private[this] def objToJSONRec(tail: List[(String, Ast)], acc: String = ""): String = {
-    @inline def w(key: String, value: String) = "\"" + key + "\":" + value
-    (acc, tail) match {
-      case (_, Nil) ⇒ acc
-      case ("", (key, value) :: Nil) ⇒ w(key, toJSONInternal(value))
-      case ("", (key, value) :: xs) ⇒ objToJSONRec(xs, w(key, toJSONInternal(value)))
-      case (_, (key, value) :: Nil) ⇒ acc + "," + w(key, toJSONInternal(value))
-      case (_, (key, value) :: xs) ⇒ objToJSONRec(xs, acc + "," + w(key, toJSONInternal(value)))
+  def render(sb: StringBuilder, depth: Int, jv: Ast): Unit =
+    jv match {
+      case Ast.Null => sb.append("null")
+      case Ast.True => sb.append("true")
+      case Ast.False => sb.append("false")
+      case Ast.Num(n) => sb.append(if (n == n.toInt) n.toInt.toString else n.toString)
+      case Ast.Str(s) => renderString(sb, s)
+      case Ast.Arr(xs) => renderArray(sb, depth, xs)
+      case Ast.Obj(vs) => renderObject(sb, depth, canonicalizeObject(vs))
+    }
+
+  def canonicalizeObject(vs: Map[String, Ast]): Iterator[(String, Ast)] = {
+    vs.iterator
+  }
+
+  def renderString(sb: StringBuilder, s: String): Unit = {
+    escape(sb, s, unicode = false)
+  }
+
+  def renderArray(sb: StringBuilder, depth: Int, vs: Iterable[Ast]): Unit = {
+    if (vs.isEmpty) sb.append("[]")
+    else {
+      sb.append("[")
+      val iter = vs.iterator
+      render(sb, depth + 1, iter.next())
+      while (iter.hasNext) {
+        sb.append(",")
+        render(sb, depth + 1, iter.next())
+      }
+      sb.append("]")
     }
   }
 
-  private[this] def toJSONInternal(v: Ast): String = v match {
-    case Ast.Str(s) ⇒ "\"" + s.replace(Quote, QuoteEscaped) + "\""
-    case Ast.Arr(xs) ⇒ "[" + arrayToJSONRec(xs) + "]"
-    case Ast.Obj(m) ⇒ "{" + objToJSONRec(m.toList) + "}"
-    case Ast.Num(x) ⇒ x.toString
-    case Ast.True ⇒ "true"
-    case Ast.False ⇒ "false"
-    case Ast.Null ⇒ "null"
+  def renderObject(sb: StringBuilder, depth: Int, it: Iterator[(String, Ast)]): Unit = {
+    if (!it.hasNext) { sb.append("{}"); () } else {
+      val (k0, v0) = it.next()
+      sb.append("{")
+      renderString(sb, k0)
+      sb.append(":")
+      render(sb, depth + 1, v0)
+      while (it.hasNext) {
+        val (k, v) = it.next()
+        sb.append(",")
+        renderString(sb, k)
+        sb.append(":")
+        render(sb, depth + 1, v)
+      }
+      sb.append("}")
+    }
   }
 
-  def print(ast: Ast): String = toJSONInternal(ast)
+  def escape(sb: StringBuilder, s: String, unicode: Boolean): Unit = {
+    sb.append('"')
+    var i = 0
+    val len = s.length
+    while (i < len) {
+      (s.charAt(i): @switch) match {
+        case '"' => sb.append("\\\"")
+        case '\\' => sb.append("\\\\")
+        case '\b' => sb.append("\\b")
+        case '\f' => sb.append("\\f")
+        case '\n' => sb.append("\\n")
+        case '\r' => sb.append("\\r")
+        case '\t' => sb.append("\\t")
+        case c =>
+          if (c < ' ' || (c > '~' && unicode)) sb.append("\\u%04x" format c.toInt)
+          else sb.append(c)
+      }
+      i += 1
+    }
+    sb.append('"')
+  }
 }

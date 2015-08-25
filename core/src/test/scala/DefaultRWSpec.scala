@@ -87,13 +87,13 @@ class DefaultRWSpec extends FlatSpec with Matchers with TestKit {
   }
 
   "Set" should "be read from array" in {
-    val source = Ast.Arr(List(Ast.Num(1), Ast.Num(2), Ast.Num(3)))
+    val source = Ast.Arr(Vector(Ast.Num(1), Ast.Num(2), Ast.Num(3)))
     val pattern = Set(1, 2, 3)
     read[Set[Int]](source) should be(pattern)
   }
 
   it should "be written into array" in {
-    val pattern = Ast.Arr(List(Ast.Num(1), Ast.Num(2), Ast.Num(3)))
+    val pattern = Ast.Arr(Vector(Ast.Num(1), Ast.Num(2), Ast.Num(3)))
     val source = Set(1, 2, 3)
     write(source) should be(pattern)
   }

@@ -9,7 +9,7 @@ object Ast {
   
   case class Num(value: Double) extends Ast
   case class Str(value: String) extends Ast
-  case class Arr(value: List[Ast]) extends Ast
+  case class Arr(value: Iterable[Ast]) extends Ast
   case class Obj(value: Map[String, Ast]) extends Ast
 
   private[this] def convert(value: Any): Ast = value match {
