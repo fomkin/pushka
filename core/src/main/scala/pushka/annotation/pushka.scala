@@ -125,7 +125,10 @@ object pushkaMacro {
       }
       
       // Check base classes contains this sealed trait.  
-      def checkBases(xs: List[Tree]) = xs.asInstanceOf[List[Ident]].exists(_.name == traitName)
+      def checkBases(xs: List[Tree]) = xs exists {
+        case x: Ident ⇒ x.name == traitName
+        case _ ⇒ false
+      }
       
       // Convert scala names to JSON object key names
       // MyCaseObject -> myCaseObject

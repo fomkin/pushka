@@ -4,6 +4,16 @@ import pushka.annotation.pushka
 
 object SealedTraitSpec {
 
+  abstract class Rgb(r: Int, g: Int, b: Int)
+
+  @pushka sealed trait Color
+
+  object Color {
+    case object Red extends Rgb(255, 0, 0) with Color
+    case object Green extends Rgb(0, 255, 0) with Color
+    case object Blue extends Rgb(0, 0, 255) with Color
+  }
+
   @pushka sealed trait WithBody {
     def x: Int
   }
@@ -64,5 +74,9 @@ class SealedTraitSpec extends FlatSpec with Matchers {
 
   "Deprecated annotation in case classes" should "not breaks writing" in {
     write[Base](Base.Descendant(42))
+  }
+
+  "Color" should "be read correctly" in {
+    read[Color](Ast.Str("red")) shouldBe Color.Red
   }
 }
