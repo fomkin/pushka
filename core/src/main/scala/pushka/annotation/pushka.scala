@@ -54,8 +54,14 @@ object pushkaMacro {
         def basicW(x: ValDef) = q"${x.name.toString} -> pushka.write(value.${x.name})"
         val (nonOpts, opts) = fields.partition(!checkValDefIsOption(_))
         val nonOptsWriters = nonOpts.map(x ⇒ q"b.append(${basicW(x)})")
-        val optsWriters = opts map { x ⇒ 
-          q"if (value.${x.name}.nonEmpty) b.append(${basicW(x)})"
+        val optsWriters = opts map { x ⇒
+          q"""
+             if (config.leanOptions) {
+               if (value.${x.name}.nonEmpty) b.append(${basicW(x)})
+             } else {
+               b.append(${basicW(x)})
+             }
+          """
         }
         q"""
           val b = scala.collection.mutable.Buffer.empty[(String, pushka.Ast)]
@@ -72,7 +78,7 @@ object pushkaMacro {
       typeParams match {
         case Nil ⇒
           q"""
-            implicit val _rw: pushka.RW[$className] = new pushka.RW[$className] {
+            implicit def _rw(implicit config: pushka.Config = pushka.Config.default): pushka.RW[$className] = new pushka.RW[$className] {
               def read(value: pushka.Ast) = $reader
               def write(value: $className): pushka.Ast = $writer
             }
@@ -91,7 +97,7 @@ object pushkaMacro {
           val params = defs.map(_.name)
           val rws = makeRWsRec(0, Nil, params)
           q"""
-            implicit def _rw[..$defs](implicit ..$rws): pushka.RW[$className[..$params]] = {
+            implicit def _rw[..$defs](implicit ..$rws, config: pushka.Config = pushka.Config.default): pushka.RW[$className[..$params]] = {
               new pushka.RW[$className[..$params]] {
                 def read(value: pushka.Ast) = $reader
                 def write(value: $className[..$params]): pushka.Ast = $writer

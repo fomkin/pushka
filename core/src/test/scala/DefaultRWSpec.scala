@@ -3,7 +3,7 @@ import java.util.UUID
 import org.scalatest._
 import pushka._
 
-class DefaultRWSpec extends FlatSpec with Matchers with TestKit {
+class DefaultRWSpec extends FlatSpec with Matchers {
 
   "Option" should "be read from simple value" in {
     read[Option[String]](Ast.Str("hello")) should be(Option("hello"))

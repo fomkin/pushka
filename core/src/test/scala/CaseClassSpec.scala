@@ -9,7 +9,7 @@ object CaseClassSpec {
   @pushka case class Point[T](x: T, y: T)
 }
 
-class CaseClassSpec extends FlatSpec with Matchers with TestKit {
+class CaseClassSpec extends FlatSpec with Matchers {
   
   import CaseClassSpec._
   
@@ -55,14 +55,27 @@ class CaseClassSpec extends FlatSpec with Matchers with TestKit {
     read[Point[Float]](source) shouldEqual pattern
   }
 
-  "Option fields" should "be write without overhead" in {
+  "Option fields" should "be written without overhead" in {
     val pattern = Ast.Obj(Map("y" → Ast.Str("vodka")))
     write[MyCaseClass2](MyCaseClass2(None, "vodka")) should be(pattern)
   }
 
-  "Option fields" should "be read without overhead" in {
+  it should "be read as None when field is not defined" in {
     val source = Ast.Obj(Map("y" → Ast.Str("vodka")))
     val pattern = MyCaseClass2(None, "vodka")
     read[MyCaseClass2](source) should be(pattern)
   }
+
+  it should "be read as None when field is null" in {
+    val source = Ast.Obj(Map("x" → Ast.Null, "y" → Ast.Str("vodka")))
+    val pattern = MyCaseClass2(None, "vodka")
+    read[MyCaseClass2](source) should be(pattern)
+  }
+
+  "None" should "be written as null when leanOptions is switched off" in {
+    implicit val config = pushka.Config(leanOptions = false)
+    val pattern = Ast.Obj(Map("x" → Ast.Null, "y" → Ast.Str("vodka")))
+    write[MyCaseClass2](MyCaseClass2(None, "vodka")) should be(pattern)
+  }
+
 }
