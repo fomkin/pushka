@@ -23,7 +23,7 @@ object SealedTraitSpec {
   @pushka case class Container(user: User, anotherField: Int)
 }
 
-class SealedTraitSpec extends FlatSpec with Matchers with TestKit {
+class SealedTraitSpec extends FlatSpec with Matchers {
 
   import SealedTraitSpec._
 

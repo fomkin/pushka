@@ -28,6 +28,7 @@ object GenTuples extends (File ⇒ Seq[File]) {
       s"""
          |package pushka
          |
+         |// This file was generated
          |trait Generated {
          |${defs.mkString("\n")}
          |}
