@@ -117,7 +117,7 @@ object pushkaMacro {
       @tailrec def genUpdatedBody(acc: List[Tree], tail: List[Tree]): List[Tree] = tail match {
         case Nil ⇒ acc
         case x :: xs ⇒ x match {
-          case classDecl @ q"case class $n(..$fields) extends ..$p" if checkBases(p) ⇒
+          case classDecl @ q"$mods class $n(..$fields) extends ..$p" if mods.hasFlag(Flag.CASE) && checkBases(p) ⇒
             val newAcc = classDecl :: modifiedCompanion(None, caseClassRW(n, Nil, fields), n) :: acc
             genUpdatedBody(newAcc, xs)
           case ignore ⇒ genUpdatedBody(ignore :: acc, xs)
@@ -147,8 +147,10 @@ object pushkaMacro {
       
       val names: Seq[VariantName] = {
         val list = (body: List[Tree]) collect {
-          case q"case object $n extends ..$p { ..$body }" if checkBases(p) ⇒ Left(n)
-          case q"case class $n(..$fields) extends ..$p  { ..$body }" if checkBases(p) ⇒ Right(n)
+          case q"$mods object $n extends ..$p { ..$body }"
+            if checkBases(p) && mods.hasFlag(Flag.CASE) ⇒ Left(n)
+          case q"$mods class $n(..$fields) extends ..$p  { ..$body }"
+            if checkBases(p) && mods.hasFlag(Flag.CASE) ⇒ Right(n)
         }                                            
         // Case classes are matched by variable pattern (see bellow)
         // it disallow to match anything elese (SLS 8.1.1).

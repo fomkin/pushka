@@ -21,6 +21,13 @@ object SealedTraitSpec {
   }
 
   @pushka case class Container(user: User, anotherField: Int)
+
+  @pushka sealed trait Base
+
+  object Base {
+    @deprecated("Some message", "Today")
+    case class Descendant(value: Int) extends Base
+  }
 }
 
 class SealedTraitSpec extends FlatSpec with Matchers {
@@ -53,5 +60,9 @@ class SealedTraitSpec extends FlatSpec with Matchers {
   
   "Sealed trait with body" should "be processed" in {
     write[WithBody](WithBody.A) shouldEqual Ast.Str("a")
+  }
+
+  "Deprecated annotation in case classes" should "not breaks writing" in {
+    write[Base](Base.Descendant(42))
   }
 }
