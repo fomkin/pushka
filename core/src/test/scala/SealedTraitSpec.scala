@@ -37,6 +37,10 @@ object SealedTraitSpec {
   object Base {
     @deprecated("Some message", "Today")
     case class Descendant(value: Int) extends Base
+
+    object Descendant {
+      def haha(): Unit = {}
+    }
   }
 }
 
