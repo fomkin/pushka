@@ -20,7 +20,7 @@ object pushkaMacro {
 
     val elseThrowPushkaException = cq"_ => throw pushka.PushkaException()"
     
-    def checkValDefIsOption(x: ValDef) = {
+    def checkValDefIsOption(x: ValDef): Boolean = {
       x.tpt.children.headOption match {
         case Some(tpeIdent: Ident) ⇒
           tpeIdent.name == TypeName("Option")
@@ -114,18 +114,26 @@ object pushkaMacro {
       
       // Update body so that cases classes contained in companion object
       // of a sealed trait will processed by Pushka (i.e. generate RWs for them).
-      @tailrec def genUpdatedBody(acc: List[Tree], tail: List[Tree]): List[Tree] = tail match {
-        case Nil ⇒ acc
-        case x :: xs ⇒ x match {
-          case classDecl @ q"$mods class $n(..$fields) extends ..$p" if mods.hasFlag(Flag.CASE) && checkBases(p) ⇒
-            val newAcc = classDecl :: modifiedCompanion(None, caseClassRW(n, Nil, fields), n) :: acc
+      @tailrec def genUpdatedBody(acc: List[Tree], tail: List[Tree]): List[Tree] = {
+        def checkCaseClass(classDecl: ClassDef, compDecl: Option[ModuleDef]) = classDecl match {
+          case q"$mods class $n(..$fields) extends ..$p" if mods.hasFlag(Flag.CASE) && checkSuperClass(p) ⇒
+            classDecl :: modifiedCompanion(compDecl, caseClassRW(n, Nil, fields), n) :: acc
+          case _ ⇒ classDecl :: acc
+        }
+        tail match {
+          case Nil ⇒ acc
+          case (classDecl: ClassDef) :: (compDecl: ModuleDef) :: xs ⇒
+            val newAcc = checkCaseClass(classDecl, Some(compDecl))
             genUpdatedBody(newAcc, xs)
-          case ignore ⇒ genUpdatedBody(ignore :: acc, xs)
+          case (classDecl: ClassDef) :: xs ⇒
+            val newAcc = checkCaseClass(classDecl, None)
+            genUpdatedBody(newAcc, xs)
+          case ignore :: xs ⇒ genUpdatedBody(ignore :: acc, xs)
         }
       }
       
       // Check base classes contains this sealed trait.  
-      def checkBases(xs: List[Tree]) = xs exists {
+      def checkSuperClass(xs: List[Tree]) = xs exists {
         case x: Ident ⇒ x.name == traitName
         case _ ⇒ false
       }
@@ -151,9 +159,9 @@ object pushkaMacro {
       val names: Seq[VariantName] = {
         val list = (body: List[Tree]) collect {
           case q"$mods object $n extends ..$p { ..$body }"
-            if checkBases(p) && mods.hasFlag(Flag.CASE) ⇒ Left(n)
+            if checkSuperClass(p) && mods.hasFlag(Flag.CASE) ⇒ Left(n)
           case q"$mods class $n(..$fields) extends ..$p  { ..$body }"
-            if checkBases(p) && mods.hasFlag(Flag.CASE) ⇒ Right(n)
+            if checkSuperClass(p) && mods.hasFlag(Flag.CASE) ⇒ Right(n)
         }                                            
         // Case classes are matched by variable pattern (see bellow)
         // it disallow to match anything elese (SLS 8.1.1).
