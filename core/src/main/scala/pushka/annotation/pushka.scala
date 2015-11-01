@@ -35,6 +35,12 @@ object pushkaMacro {
         val fReaders = fields map { x ⇒
           if (checkValDefIsOption(x)) {
             q"${x.name} = m.get(${x.name.toString}).flatMap(x => pushka.read[${x.tpt}](x))"
+          } else if (x.rhs.nonEmpty) {
+            q"""
+              ${x.name} = m.get(${x.name.toString}).
+                map(x => pushka.read[${x.tpt}](x)).
+                getOrElse(${x.rhs})
+            """
           } else {
             q"${x.name} = pushka.read[${x.tpt}](m(${x.name.toString}))"
           }

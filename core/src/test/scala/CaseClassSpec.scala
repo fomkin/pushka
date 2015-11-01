@@ -7,6 +7,7 @@ object CaseClassSpec {
   @pushka case class MyCaseClass2(x: Option[String], y: String)
   @pushka case class Id[+T](x: Int)
   @pushka case class Point[T](x: T, y: T)
+  @pushka case class WithDefaultParams(x: Int, y: Int = 100)
 }
 
 class CaseClassSpec extends FlatSpec with Matchers {
@@ -78,4 +79,9 @@ class CaseClassSpec extends FlatSpec with Matchers {
     write[MyCaseClass2](MyCaseClass2(None, "vodka")) should be(pattern)
   }
 
+  "Case class with default params" should "be read with default parameter if it was not defined in AST" in {
+    val source = Ast.Obj(Map("x" → Ast.Num(1)))
+    val pattern = WithDefaultParams(1, 100)
+    read[WithDefaultParams](source) shouldEqual pattern
+  }
 }
