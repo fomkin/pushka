@@ -21,10 +21,10 @@ Configure SBT file
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
 
 // For Scala.js
-libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.3.0"
+libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.3.1"
 
 // For Scala.jvm
-libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.3.0"
+libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.3.1"
 ```
 
 Define case classes
