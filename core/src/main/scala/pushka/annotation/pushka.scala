@@ -122,7 +122,7 @@ object pushkaMacro {
       // of a sealed trait will processed by Pushka (i.e. generate RWs for them).
       @tailrec def genUpdatedBody(acc: List[Tree], tail: List[Tree]): List[Tree] = {
         def checkCaseClass(classDecl: ClassDef, compDecl: Option[ModuleDef]) = classDecl match {
-          case q"$mods class $n(..$fields) extends ..$p" if mods.hasFlag(Flag.CASE) && checkSuperClass(p) ⇒
+          case q"$mods class $n(..$fields) extends ..$p { ..$body }" if mods.hasFlag(Flag.CASE) && checkSuperClass(p) ⇒
             classDecl :: modifiedCompanion(compDecl, caseClassRW(n, Nil, fields), n) :: acc
           case _ ⇒ classDecl :: acc
         }
