@@ -28,6 +28,7 @@ object SealedTraitSpec {
   object User {
     case object Empty extends User
     case class Name(first: String, last: String) extends User
+    case object Anonymous extends User
   }
 
   @pushka case class Container(user: User, anotherField: Int)

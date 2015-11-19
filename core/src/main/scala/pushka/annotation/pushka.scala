@@ -126,9 +126,12 @@ object pushkaMacro {
             classDecl :: modifiedCompanion(compDecl, caseClassRW(n, Nil, fields), n) :: acc
           case _ ⇒ classDecl :: acc
         }
+        def compareNames(classDecl: ClassDef, compDecl: ModuleDef): Boolean = {
+          classDecl.name.toString == compDecl.name.toString
+        }
         tail match {
           case Nil ⇒ acc
-          case (classDecl: ClassDef) :: (compDecl: ModuleDef) :: xs ⇒
+          case (classDecl: ClassDef) :: (compDecl: ModuleDef) :: xs if (compareNames(classDecl, compDecl)) ⇒
             val newAcc = checkCaseClass(classDecl, Some(compDecl))
             genUpdatedBody(newAcc, xs)
           case (classDecl: ClassDef) :: xs ⇒
