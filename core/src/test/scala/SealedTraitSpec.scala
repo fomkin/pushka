@@ -20,7 +20,7 @@ object SealedTraitSpec {
   
   object WithBody {
     case object A extends WithBody { val x = 0 }
-    case object B extends WithBody { val x = 1 }
+    case class B(y: Int) extends WithBody { val x = 1 }
   }
   
   @pushka sealed trait User
@@ -74,6 +74,7 @@ class SealedTraitSpec extends FlatSpec with Matchers {
   
   "Sealed trait with body" should "be processed" in {
     write[WithBody](WithBody.A) shouldEqual Ast.Str("a")
+    write[WithBody](WithBody.B(1)) shouldEqual Ast.Obj(Map("b" → Ast.Num(1)))
   }
 
   "Deprecated annotation in case classes" should "not breaks writing" in {
