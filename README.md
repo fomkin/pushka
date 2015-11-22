@@ -2,79 +2,180 @@
 
 [![Build Status](https://travis-ci.org/fomkin/pushka.svg?branch=develop)](https://travis-ci.org/fomkin/pushka)
 
-Pushka is a pickler implemented without any runtime reflection. 
-We want to achieve high stability of pickling of
-complex structures and give pretty output without 
-service keywords and wrappers.   
+Pushka is a pickler implemented without any runtime reflection. It created to reach well human readability of output JSON and good performance. Pushka works well both on Scala and Scala.js.
 
-  * Both Scala and Scala.js
-  * Sealed traits and case classes pickling 
-  * Most of standard scala data types pickling 
-  * Really human-readable output (see bellow)
-  * Not only JSON. You can implement your own backend
+# Motivation
 
-# Getting Started
+1. Most of picklers are writes case classes "as is". For example if we have `Option` value it will be writeen with some kind of wrapper. In the case of sealed traits, most picklers writes metadata: trait name and case class name. This make JSON unreadable by human and make it usless for creating public API. We want to achive high human readablility of output JSON: no wrappers if it possible, no metadata ever.
 
-Configure SBT file
+2. Codebase simplicity. In our work we encountered that some picklers based on implicit macros (including shapeless base picklers) are fails on our data. In this project we want make code as simple as possible to find bugs faster.
+
+3. High performance. Minimum runtime overhead. See [Boopickle benchmarks](http://ochrons.github.io/boopickle-perftest/).
+
+
+# Usage
+
+Add Pushka dependency to your project.
+
+```scala
+// For Scala.js
+libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.3.2"
+
+// For Scala.jvm
+libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.3.2"
+```
+Pushka uses marco annotations which implemented in macro paradise plugin. Unfortunately it can't be added transitively by Pushka dependency, so you need to plug it manually.
 
 ```scala
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
-
-// For Scala.js
-libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.3.1"
-
-// For Scala.jvm
-libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.3.1"
 ```
-
-Define case classes
+Let define types we want to write to JSON.
 
 ```scala
 import pushka.annotation._
 
-@pushka case class Structure(field1: String, field2: Option[String])
+@pushka 
+case class User(email: String, name: Option[String], role: Role)
 
-@pushka case class SimpleStructure(x: Int)
+@puska
+sealed trait Role
+
+object Role {
+
+  case object Moderator extends Role
+  
+  case object Accountant extends Role
+  
+  case class Group(xs: Seq[Role]) extends Role
+}
 ```
-
-Define ADTs
+Ok. Now let create data and write it to JSON
 
 ```scala
-import pushka.annotation._
+import pushka.json._
 
-@pushka sealed trait User
+val data = User(
+  email = "john@example.com", 
+  name = None, 
+  role = Role.Accountant
+)
 
-// Companion object is required for sealed traits.
-object User {
-  // Case classes and case object defined within
-  // companion object with be used for sealed trait pickling.
-  case object Empty extends User
-  // BTW you can use this case classes alone (not case objects)
-  case class Name(first: String, last: String) extends User
-  case class Password(value: String) extends User
+println(write(data))
+```
+
+```json
+{
+  "email": "john@example.com",
+  "role": "accountant"
 }
 ```
 
-Use it
+Ok. Change users role.
 
 ```scala
-import pushka.json._
-
-write(Structure("a", Some("b"))) // { "field1": "a", "field2": "b" }
-write(SimpleStructure(42)) // 42
-
-write[User](User.Empty) // "empty"
-write[User](User.Name("John", "Doe")) // { "name": { "first": "John", "last": "Doe" } }
-write[User](User.Password("boobs")) // { "password": "boobs" }
+data.copy(role = Role.Group(Role.Accountant, Role.Moderator))
 ```
+```json
+{
+  "email": "john@example.com",
+  "role": {
+    "group": ["accountant", "moderator"]
+  }  
+}
+```
+Add user name.
+```scala
+data.copy(name = Some("Jonh Doe"))
+```
+```json
+{
+  "email": "john@example.com",
+  "name": "John Doe",
+  "role": {
+    "group": ["accountant", "moderator"]
+  }  
+}
+```
+Now, in the opposite direction. Lets read JSON.
+```scala
+val json = """
+  {
+    "email": "john@example.com",
+    "name": "John Doe",
+    "role": {
+      "group": ["accountant", "moderator"]
+    }  
+  }
+"""
+
+assert {
+  read[User](json) == User(
+    email = "john@example.com", 
+    name = Some("Jonh Doe"), 
+    role = Role.Group(Role.Accountant, Role.Moderator)
+  )
+}    
+```
+
+### Case class default parameters
+
+That if we add new field to class and try to read JSON written to KV storage with an old version of the class? An exception will be thrown. To avoid this behavior add new filed with default value.
 
 ```scala
-import pushka.json._
-
-read[Structure](""" { "field1": "a" } """) //  Structure("a", None)
-read[SimpleStructure](42) // SimpleStructure(42)
-
-read[User](""" "empty" """) // User.Empty
-read[User](""" { "name": { "first": "John", "last": "Doe" } } """) // User.Name("John", "Doe")
-read[User](""" { "password": "boobs" } """) // User.Password("boobs")
+@pushka 
+case class User(
+  email: String, 
+  name: Option[String], 
+  role: Role, 
+  photoUrl: String = "http://example.com/images/users/dafault.jpg"
+)
 ```
+
+### Custom readers and writers
+
+Sometimes we want to write objects in a special way.
+
+```scala
+import pushka.RW
+import pushka.Ast
+
+case class Name(first: String, last: String)
+
+object Name {
+  val Pattern = "(.*) (.*)".r
+  implicit val rw = new pushka.RW[Name] {
+    def write(value: Name): Ast = {
+      Ast.Str(s"${value.first} ${value.last}")
+    }
+    def read(ast: Ast): Name = ast match {
+      case Ast.Str(Pattern(first, last)) => Name(first, last)
+      case _ => throw new Exception("It's wrong!")  
+    }
+  }
+}
+
+// ...
+
+write(User("John", "Doe"))
+```
+```json
+"John Doe"
+```
+### Write `None` as `null`
+
+You can configure Pushka to write `None` explictly.
+
+```scala
+@pushka 
+case class User(email: String, name: Option[String])
+
+implicit val config = pushka.Config(leanOptions = false)
+write(User("john@example.com", None))
+```
+```json
+{ "email": "john@example.com", "name": null }
+```
+
+# License
+
+Code released under Apache 2.0 license. See [LICENSE](https://github.com/fomkin/pushka/blob/develop/LICENSE). 
