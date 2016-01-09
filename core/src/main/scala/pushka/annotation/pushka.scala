@@ -28,21 +28,26 @@ object pushkaMacro {
       }
     }
 
+    def keyFromField(field: ValDef): String = {
+      val ck = field.mods.annotations collectFirst { case q"new key(${s: String})" ⇒ s }
+      ck.fold(field.name.toString)(identity)
+    }
+
     def caseClassReader(className: TypeName, fields: List[ValDef]) = fields match {
       case field :: Nil ⇒
         q"${className.toTermName}(pushka.read[${field.tpt}](value))"
       case _ ⇒
         val fReaders = fields map { x ⇒
           if (checkValDefIsOption(x)) {
-            q"${x.name} = m.get(${x.name.toString}).flatMap(x => pushka.read[${x.tpt}](x))"
+            q"${x.name} = m.get(${keyFromField(x)}).flatMap(x => pushka.read[${x.tpt}](x))"
           } else if (x.rhs.nonEmpty) {
             q"""
-              ${x.name} = m.get(${x.name.toString}).
+              ${x.name} = m.get(${keyFromField(x)}).
                 map(x => pushka.read[${x.tpt}](x)).
                 getOrElse(${x.rhs})
             """
           } else {
-            q"${x.name} = pushka.read[${x.tpt}](m(${x.name.toString}))"
+            q"${x.name} = pushka.read[${x.tpt}](m(${keyFromField(x)}))"
           }
         }
         q"""
@@ -57,7 +62,10 @@ object pushkaMacro {
       case field :: Nil ⇒
         q"pushka.write(value.${field.name})"
       case _ ⇒
-        def basicW(x: ValDef) = q"${x.name.toString} -> pushka.write(value.${x.name})"
+        def basicW(filed: ValDef) = {
+          val key = keyFromField(filed)
+          q"$key -> pushka.write(value.${filed.name})"
+        }
         val (nonOpts, opts) = fields.partition(!checkValDefIsOption(_))
         val nonOptsWriters = nonOpts.map(x ⇒ q"b.append(${basicW(x)})")
         val optsWriters = opts map { x ⇒
