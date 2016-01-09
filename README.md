@@ -131,6 +131,15 @@ case class User(
 )
 ```
 
+### @key annotation
+
+Pushka allows to define the key that a field is serialized with via a `@key` annotation
+
+```scala
+@pushka
+case class Log(@key("@ts") timestamp: String, message: String)
+```
+
 ### Custom readers and writers
 
 Sometimes we want to write objects in a special way.
