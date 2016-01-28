@@ -117,15 +117,29 @@ class DefaultRWs extends Generated {
     }
   }
 
-  implicit def iterableW[T](implicit w: Writer[T]): Writer[Iterable[T]] = new Writer[Iterable[T]] {
-    def write(value: Iterable[T]): Ast = {
-      val b = collection.mutable.Buffer.empty[Ast]
-      val iter = value.iterator
-      while (iter.hasNext) {
-        b += w.write(iter.next())
-      }
-      Ast.Arr(b)
+  private def writeIterable[T](value: Iterable[T])(implicit w: Writer[T]): Ast = {
+    val b = collection.mutable.Buffer.empty[Ast]
+    val iter = value.iterator
+    while (iter.hasNext) {
+      b += w.write(iter.next())
     }
+    Ast.Arr(b)
+  }
+
+  implicit def seqW[T](implicit w: Writer[T]): Writer[Seq[T]] = new Writer[Seq[T]] {
+    def write(value: Seq[T]): Ast = writeIterable(value)
+  }
+
+  implicit def setW[T](implicit w: Writer[T]): Writer[Set[T]] = new Writer[Set[T]] {
+    def write(value: Set[T]): Ast = writeIterable(value)
+  }
+
+  implicit def listW[T](implicit w: Writer[T]): Writer[List[T]] = new Writer[List[T]] {
+    def write(value: List[T]): Ast = writeIterable(value)
+  }
+
+  implicit def mapW[K, V](implicit w: Writer[(K, V)]): Writer[Map[K, V]] = new Writer[Map[K, V]] {
+    def write(value: Map[K, V]): Ast = writeIterable(value)
   }
 
   implicit def seqR[T](implicit r: Reader[T]): Reader[Seq[T]] = new Reader[Seq[T]] {

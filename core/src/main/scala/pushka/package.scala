@@ -8,7 +8,7 @@ package object pushka extends DefaultRWs {
     def read(value: Ast): T
   }
 
-  trait Writer[-T] {
+  trait Writer[T] {
     def write(value: T): Ast
   }
 
