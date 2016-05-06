@@ -19,15 +19,15 @@ Add Pushka dependency to your project.
 
 ```scala
 // For Scala.js
-libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.4.1"
+libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.4.2"
 
 // For Scala.jvm
-libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.4.1"
+libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.4.2"
 ```
 Pushka uses marco annotations which implemented in macro paradise plugin. Unfortunately it can't be added transitively by Pushka dependency, so you need to plug it manually.
 
 ```scala
-addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 ```
 Let define types we want to write to JSON.
 
