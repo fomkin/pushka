@@ -130,6 +130,10 @@ class DefaultRWs extends Generated {
     def write(value: Seq[T]): Ast = writeIterable(value)
   }
 
+  implicit def vectorW[T](implicit w: Writer[T]): Writer[Vector[T]] = new Writer[Vector[T]] {
+    def write(value: Vector[T]): Ast = writeIterable(value)
+  }
+
   implicit def setW[T](implicit w: Writer[T]): Writer[Set[T]] = new Writer[Set[T]] {
     def write(value: Set[T]): Ast = writeIterable(value)
   }
@@ -145,6 +149,13 @@ class DefaultRWs extends Generated {
   implicit def seqR[T](implicit r: Reader[T]): Reader[Seq[T]] = new Reader[Seq[T]] {
     def read(value: Ast): Seq[T] = value match {
       case Ast.Arr(xs) ⇒ xs.map(r.read).toSeq
+      case _ ⇒ throw PushkaException()
+    }
+  }
+
+  implicit def vectorR[T](implicit r: Reader[T]): Reader[Vector[T]] = new Reader[Vector[T]] {
+    def read(value: Ast): Vector[T] = value match {
+      case Ast.Arr(xs) ⇒ xs.map(r.read).toVector
       case _ ⇒ throw PushkaException()
     }
   }
