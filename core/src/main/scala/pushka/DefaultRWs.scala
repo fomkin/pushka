@@ -26,7 +26,7 @@ class DefaultRWs extends Generated {
       def read(value: Ast): Either[Left, Right] = value match {
         case Ast.Obj(m) if m.contains("left") ⇒ Left(leftRw.read(m("left")))
         case Ast.Obj(m) if m.contains("right") ⇒ Right(rightRw.read(m("right")))
-        case _ ⇒ throw PushkaException()
+        case _ ⇒ throw PushkaException(value, Either.getClass)
       }
     }
   }
@@ -45,7 +45,7 @@ class DefaultRWs extends Generated {
     def read(value: Ast): Boolean = value match {
       case Ast.True ⇒ true
       case Ast.False ⇒ false
-      case _ ⇒ throw PushkaException()
+      case _ ⇒ throw PushkaException(value, Boolean.getClass)
     }
 
     def write(value: Boolean): Ast = {
@@ -56,7 +56,7 @@ class DefaultRWs extends Generated {
   implicit val int = new RW[Int] {
     def read(value: Ast): Int = value match {
       case Ast.Num(x) ⇒ x.toInt
-      case _ ⇒ throw PushkaException()
+      case _ ⇒ throw PushkaException(value, Int.getClass)
     }
 
     def write(value: Int): Ast = {
@@ -67,7 +67,7 @@ class DefaultRWs extends Generated {
   implicit val double = new RW[Double] {
     def read(value: Ast): Double = value match {
       case Ast.Num(x) ⇒ x
-      case _ ⇒ throw PushkaException()
+      case _ ⇒ throw PushkaException(value, Double.getClass)
     }
 
     def write(value: Double): Ast = {
@@ -78,7 +78,7 @@ class DefaultRWs extends Generated {
   implicit val float = new RW[Float] {
     def read(value: Ast): Float = value match {
       case Ast.Num(x) ⇒ x.toFloat
-      case _ ⇒ throw PushkaException()
+      case _ ⇒ throw PushkaException(value, Float.getClass)
     }
 
     def write(value: Float): Ast = {
@@ -89,7 +89,7 @@ class DefaultRWs extends Generated {
   implicit val long = new RW[Long] {
     def read(value: Ast): Long = value match {
       case Ast.Str(x) ⇒ x.toLong
-      case _ ⇒ throw PushkaException()
+      case _ ⇒ throw PushkaException(value, Long.getClass)
     }
 
     def write(value: Long): Ast = {
@@ -100,7 +100,7 @@ class DefaultRWs extends Generated {
   implicit val string = new RW[String] {
     def read(value: Ast): String = value match {
       case Ast.Str(x) ⇒ x
-      case _ ⇒ throw PushkaException()
+      case _ ⇒ throw PushkaException(value, "String")
     }
 
     def write(value: String): Ast = {
@@ -113,7 +113,7 @@ class DefaultRWs extends Generated {
 
     def read(value: Ast): UUID = value match {
       case Ast.Str(s) ⇒ UUID.fromString(s)
-      case _ ⇒ throw PushkaException()
+      case _ ⇒ throw PushkaException(value, "UUID")
     }
   }
 
@@ -149,28 +149,28 @@ class DefaultRWs extends Generated {
   implicit def seqR[T](implicit r: Reader[T]): Reader[Seq[T]] = new Reader[Seq[T]] {
     def read(value: Ast): Seq[T] = value match {
       case Ast.Arr(xs) ⇒ xs.map(r.read).toSeq
-      case _ ⇒ throw PushkaException()
+      case _ ⇒ throw PushkaException(value, Seq.getClass)
     }
   }
 
   implicit def vectorR[T](implicit r: Reader[T]): Reader[Vector[T]] = new Reader[Vector[T]] {
     def read(value: Ast): Vector[T] = value match {
       case Ast.Arr(xs) ⇒ xs.map(r.read).toVector
-      case _ ⇒ throw PushkaException()
+      case _ ⇒ throw PushkaException(value, Vector.getClass)
     }
   }
 
   implicit def setR[T](implicit r: Reader[T]): Reader[Set[T]] = new Reader[Set[T]] {
     def read(value: Ast): Set[T] = value match {
       case Ast.Arr(xs) ⇒ xs.map(r.read).toSet
-      case _ ⇒ throw PushkaException()
+      case _ ⇒ throw PushkaException(value, Set.getClass)
     }
   }
 
   implicit def listR[T](implicit r: Reader[T]): Reader[List[T]] = new Reader[List[T]] {
     def read(value: Ast): List[T] = value match {
       case Ast.Arr(xs) ⇒ xs.map(r.read).toList
-      case _ ⇒ throw PushkaException()
+      case _ ⇒ throw PushkaException(value, List.getClass)
     }
   }
 
@@ -178,7 +178,7 @@ class DefaultRWs extends Generated {
     new Reader[Map[K, V]] {
       def read(value: Ast): Map[K, V] = value match {
         case Ast.Arr(xs) ⇒ (for (x ← xs) yield r.read(x)).toMap
-        case _ ⇒ throw PushkaException()
+        case _ ⇒ throw PushkaException(value, Map.getClass)
       }
     }
   }

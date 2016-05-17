@@ -21,7 +21,7 @@ final class JsonParser extends Parser[String] {
     val parsed = try {
       JSON.parse(data)
     } catch{ case js.JavaScriptException(e: js.SyntaxError) =>
-      throw PushkaException(e.message)
+      throw PushkaException(s"Error while parsing JSON $data: ${e.message}")
     }
     readAst(parsed)
   }

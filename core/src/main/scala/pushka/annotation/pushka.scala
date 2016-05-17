@@ -15,11 +15,9 @@ class pushka extends StaticAnnotation {
 object pushkaMacro {
 
   def impl(c: blackbox.Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
-    
+
     import c.universe._
 
-    val elseThrowPushkaException = cq"_ => throw pushka.PushkaException()"
-    
     def checkValDefIsOption(x: ValDef): Boolean = {
       x.tpt.children.headOption match {
         case Some(tpeIdent: Ident) ⇒
@@ -53,7 +51,7 @@ object pushkaMacro {
         q"""
           value match {
             case pushka.Ast.Obj(m) => ${className.toTermName}(..$fReaders)
-            case _ ⇒ throw pushka.PushkaException()
+            case _ ⇒ throw pushka.PushkaException(value, ${className.toTermName.toString})
           }
         """
     }
@@ -88,7 +86,7 @@ object pushkaMacro {
     def caseClassRW(className: TypeName, typeParams: List[TypeDef], fields: List[ValDef]) = {
       val reader = caseClassReader(className, fields)
       val writer = caseClassWriter(className, fields)
-      
+
       typeParams match {
         case Nil ⇒
           q"""
@@ -123,9 +121,9 @@ object pushkaMacro {
 
     def sealedTraitRW(traitName: TypeName, compDecl: ModuleDef) = {
       // Left: name of case object
-      // Right: name of case class 
+      // Right: name of case class
       type VariantName = Either[TermName, TypeName]
-      
+
       // Update body so that cases classes contained in companion object
       // of a sealed trait will processed by Pushka (i.e. generate RWs for them).
       @tailrec def genUpdatedBody(acc: List[Tree], tail: List[Tree]): List[Tree] = {
@@ -139,7 +137,7 @@ object pushkaMacro {
         }
         tail match {
           case Nil ⇒ acc
-          case (classDecl: ClassDef) :: (compDecl: ModuleDef) :: xs if (compareNames(classDecl, compDecl)) ⇒
+          case (classDecl: ClassDef) :: (compDecl: ModuleDef) :: xs if compareNames(classDecl, compDecl) ⇒
             val newAcc = checkCaseClass(classDecl, Some(compDecl))
             genUpdatedBody(newAcc, xs)
           case (classDecl: ClassDef) :: xs ⇒
@@ -148,21 +146,27 @@ object pushkaMacro {
           case ignore :: xs ⇒ genUpdatedBody(ignore :: acc, xs)
         }
       }
-      
-      // Check base classes contains this sealed trait.  
+
+      // Check base classes contains this sealed trait.
       def checkSuperClass(xs: List[Tree]) = xs exists {
         case x: Ident ⇒ x.name == traitName
         case _ ⇒ false
       }
-      
+
       // Convert scala names to JSON object key names
       // MyCaseObject -> myCaseObject
       def variantName(n: Name) = {
         val s = n.toString
         s.charAt(0).toLower + s.substring(1)
       }
-      
-      def genValueMatching(names: Seq[VariantName])(genCase: VariantName ⇒ Tree): Tree = {
+
+      def genValueMatching(names: Seq[VariantName], read: Boolean)(genCase: VariantName ⇒ Tree): Tree = {
+        val elseThrowPushkaException = if (read) {
+          cq"_ => throw pushka.PushkaException(value, ${traitName.toTermName.toString})"
+        } else {
+          cq"_ => throw pushka.PushkaException(value)"
+        }
+
         q"""
           value match {
             case ..${names.map(genCase) :+ elseThrowPushkaException}
@@ -172,30 +176,30 @@ object pushkaMacro {
 
       val q"object $obj extends ..$bases { ..$body }" = compDecl
       val updatedBody = genUpdatedBody(Nil, body)
-      
+
       val names: Seq[VariantName] = {
         val list = (body: List[Tree]) collect {
           case q"$mods object $n extends ..$p { ..$body }"
             if checkSuperClass(p) && mods.hasFlag(Flag.CASE) ⇒ Left(n)
           case q"$mods class $n(..$fields) extends ..$p  { ..$body }"
             if checkSuperClass(p) && mods.hasFlag(Flag.CASE) ⇒ Right(n)
-        }                                            
+        }
         // Case classes are matched by variable pattern (see bellow)
         // it disallow to match anything elese (SLS 8.1.1).
         // So we need to sort this list so that case objects stands in beginning
         list.sortBy(_.isRight).toSeq
       }
-      
+
       // Matching on pushka.Ast to find right reader
-      val readMatcher = genValueMatching(names) {
+      val readMatcher = genValueMatching(names, read = true) {
         case Right(n) ⇒
           val lower = variantName(n)
           cq"pushka.Ast.Obj(m) if m.contains($lower) => ${n.toTermName}._rw.read(m($lower))"
         case Left(n) ⇒ cq"pushka.Ast.Str(${variantName(n)}) => $n"
       }
-      
+
       // Matching on pushka.Ast to find right writer
-      val writeMatcher = genValueMatching(names) {
+      val writeMatcher = genValueMatching(names, read = false) {
         case Right(n) ⇒
           val lower = variantName(n)
           cq"o: $n => pushka.Ast.Obj(Map($lower -> ${n.toTermName}._rw.write(o)))"
@@ -203,7 +207,7 @@ object pushkaMacro {
       }
 
       q"""
-        object ${traitName.toTermName} { 
+        object ${traitName.toTermName} {
           ..$updatedBody
           implicit val _rw: pushka.RW[$traitName] = new pushka.RW[$traitName] {
             def read(value: pushka.Ast) = $readMatcher
@@ -212,7 +216,7 @@ object pushkaMacro {
         }
        """
     }
-    
+
     def modifiedCompanion(compDeclOpt: Option[ModuleDef], rw: Tree, className: TypeName) = {
       compDeclOpt map { compDecl =>
         // Add the formatter to the existing companion object

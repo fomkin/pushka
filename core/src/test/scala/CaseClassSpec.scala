@@ -12,9 +12,9 @@ object CaseClassSpec {
 }
 
 class CaseClassSpec extends FlatSpec with Matchers {
-  
+
   import CaseClassSpec._
-  
+
   "Case classes" should "writes correctly" in {
     val instance = MyCaseClass(10, 10, "vodka")
     val m = Map(
@@ -35,6 +35,14 @@ class CaseClassSpec extends FlatSpec with Matchers {
     read[MyCaseClass](pushka.Ast.Obj(m)) should be(instance)
   }
 
+  it should "throw exception with correct message if Ast is invalid" in {
+    val invalidAst = Ast.Arr(Seq())
+    val exception = intercept[PushkaException] {
+      read[MyCaseClass](invalidAst)
+    }
+    exception.message should be(s"Error while reading AST $invalidAst to MyCaseClass")
+  }
+
   "Case classes with one filed" should "be written as value" in {
     val source = Id[String](10)
     write[Id[String]](source) should be(Ast.Num(10))
@@ -45,16 +53,32 @@ class CaseClassSpec extends FlatSpec with Matchers {
     read[Id[String]](source) should be(Id[String](10))
   }
 
+  it should "throw exception with correct message if Ast is invalid" in {
+    val invalidAst = Ast.True
+    val exception = intercept[PushkaException] {
+      read[Id[String]](invalidAst)
+    }
+    exception.message should be(s"Error while reading AST $invalidAst to Int")
+  }
+
   "Generic case class" should "be written" in {
     val source = Point[Float](10, 10)
     val pattern = Ast("x" → 10.0, "y" → 10.0)
     write(source) shouldEqual pattern
   }
 
-  "Generic case class" should "be read" in {
+  it should "be read" in {
     val source = Ast("x" → 10.0, "y" → 10.0)
     val pattern = Point[Float](10, 10)
     read[Point[Float]](source) shouldEqual pattern
+  }
+
+  it should "throw exception with correct message if Ast is invalid" in {
+    val invalidAst = Ast.Null
+    val exception = intercept[PushkaException] {
+      read[Point[Float]](invalidAst)
+    }
+    exception.message should be(s"Error while reading AST $invalidAst to Point")
   }
 
   "Option fields" should "be written without overhead" in {
@@ -74,6 +98,14 @@ class CaseClassSpec extends FlatSpec with Matchers {
     read[MyCaseClass2](source) should be(pattern)
   }
 
+  it should "throw exception with correct message if Ast is invalid" in {
+    val invalidAst = Ast.Num(5)
+    val exception = intercept[PushkaException] {
+      read[MyCaseClass2](invalidAst)
+    }
+    exception.message should be(s"Error while reading AST $invalidAst to MyCaseClass2")
+  }
+
   "None" should "be written as null when leanOptions is switched off" in {
     implicit val config = pushka.Config(leanOptions = false)
     val pattern = Ast.Obj(Map("x" → Ast.Null, "y" → Ast.Str("vodka")))
@@ -86,6 +118,14 @@ class CaseClassSpec extends FlatSpec with Matchers {
     read[WithDefaultParams](source) shouldEqual pattern
   }
 
+  it should "throw exception with correct message if Ast is invalid" in {
+    val invalidAst = Ast.False
+    val exception = intercept[PushkaException] {
+      read[WithDefaultParams](invalidAst)
+    }
+    exception.message should be(s"Error while reading AST $invalidAst to WithDefaultParams")
+  }
+
   "Case class with @key" should "be written" in {
     val pattern = Ast.Obj(Map("@theX" → Ast.Num(1), "y" → Ast.Num(2)))
     write(WithKeyAnnotation(1, 2)) should be(pattern)
@@ -95,5 +135,13 @@ class CaseClassSpec extends FlatSpec with Matchers {
     val source = Ast.Obj(Map("@theX" → Ast.Num(1), "y" → Ast.Num(2)))
     val pattern = WithKeyAnnotation(1, 2)
     read[WithKeyAnnotation](source) should be(pattern)
+  }
+
+  it should "throw exception with correct message if Ast is invalid" in {
+    val invalidAst = Ast.True
+    val exception = intercept[PushkaException] {
+      read[WithKeyAnnotation](invalidAst)
+    }
+    exception.message should be(s"Error while reading AST $invalidAst to WithKeyAnnotation")
   }
 }
