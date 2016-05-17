@@ -16,7 +16,7 @@ object GenTuples extends (File ⇒ Seq[File]) {
          |      case Ast.Arr(xs) ⇒
          |        val xsi = xs.iterator
          |        (${readers.mkString(", ")})
-         |      case _ ⇒ throw PushkaException()
+         |      case _ ⇒ throw PushkaException(value, "Tuple")
          |    }
          |    def write(value: ($typeArgsJ)): Ast = {
          |      Ast.Arr(Vector(${writers.mkString(", ")}))

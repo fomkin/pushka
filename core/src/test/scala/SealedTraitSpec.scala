@@ -17,12 +17,12 @@ object SealedTraitSpec {
   @pushka sealed trait WithBody {
     def x: Int
   }
-  
+
   object WithBody {
     case object A extends WithBody { val x = 0 }
     case class B(y: Int) extends WithBody { val x = 1 }
   }
-  
+
   @pushka sealed trait User
 
   object User {
@@ -72,7 +72,7 @@ class SealedTraitSpec extends FlatSpec with Matchers {
       )
     )
   }
-  
+
   "Sealed trait with body" should "be processed" in {
     write[WithBody](WithBody.A) shouldEqual Ast.Str("a")
     write[WithBody](WithBody.B(1)) shouldEqual Ast.Obj(Map("b" → Ast.Num(1)))
@@ -84,5 +84,13 @@ class SealedTraitSpec extends FlatSpec with Matchers {
 
   "Color" should "be read correctly" in {
     read[Color](Ast.Str("red")) shouldBe Color.Red
+  }
+
+  it should "throw exception with correct message if Ast is invalid" in {
+    val invalidAst = Ast("foo" → "bar")
+    val exception = intercept[PushkaException] {
+      read[Color](invalidAst)
+    }
+    exception.message should be(s"Error while reading AST $invalidAst to Color")
   }
 }

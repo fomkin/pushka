@@ -1,5 +1,24 @@
 package object pushka extends DefaultRWs {
 
+  object PushkaException {
+
+    def apply(value: Ast): PushkaException = {
+      new PushkaException(s"Error while reading AST $value")
+    }
+
+    def apply(value: Ast, typeName: String): PushkaException = {
+      new PushkaException(s"Error while reading AST $value to $typeName")
+    }
+
+    def apply(value: Ast, klass: Class[_]): PushkaException = {
+      new PushkaException(s"Error while reading AST $value to ${klass.getSimpleName.split("\\$").last}")
+    }
+
+    def apply[T](value: T): PushkaException = {
+      new PushkaException(s"Error while writing value $value")
+    }
+  }
+
   case class PushkaException(message: String = "") extends Exception("")
 
   trait RW[T] extends Reader[T] with Writer[T]
