@@ -22,7 +22,7 @@ object pushkaMacro {
       x.tpt.children.headOption match {
         case Some(tpeIdent: Ident) ⇒
           tpeIdent.name == TypeName("Option")
-        case None ⇒ false
+        case _ ⇒ false
       }
     }
 
