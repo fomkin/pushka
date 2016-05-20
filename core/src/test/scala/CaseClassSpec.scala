@@ -5,6 +5,7 @@ import pushka.annotation._
 object CaseClassSpec {
   @pushka case class MyCaseClass(x: Int, y: Int, z: String)
   @pushka case class MyCaseClass2(x: Option[String], y: String)
+  @pushka case class MyCaseClass3(x: (String, Double), y: String)
   @pushka case class Id[+T](x: Int)
   @pushka case class Point[T](x: T, y: T)
   @pushka case class WithDefaultParams(x: Int, y: Int = 100)
@@ -104,6 +105,29 @@ class CaseClassSpec extends FlatSpec with Matchers {
       read[MyCaseClass2](invalidAst)
     }
     exception.message should be(s"Error while reading AST $invalidAst to MyCaseClass2")
+  }
+
+  "Tuple fields" should "be written correctly" in {
+    val pattern = Ast.Obj(Map(
+      "x" → Ast.Arr(Seq(
+        Ast.Str("bear"),
+        Ast.Num(9)
+      )),
+      "y" → Ast.Str("vodka"))
+    )
+    write(MyCaseClass3(("bear", 9), "vodka")) should be(pattern)
+  }
+
+  it should "be read" in {
+    val source = Ast.Obj(Map(
+      "x" → Ast.Arr(Seq(
+        Ast.Str("bear"),
+        Ast.Num(9)
+      )),
+      "y" → Ast.Str("vodka"))
+    )
+    val pattern = MyCaseClass3(("bear", 9), "vodka")
+    read[MyCaseClass3](source) should be(pattern)
   }
 
   "None" should "be written as null when leanOptions is switched off" in {
