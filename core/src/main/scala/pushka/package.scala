@@ -1,4 +1,4 @@
-package object pushka extends DefaultRWs {
+package object pushka extends DefaultRWs with DefaultObjectKeys {
 
   object PushkaException {
 

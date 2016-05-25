@@ -2,8 +2,23 @@ import java.util.UUID
 
 import org.scalatest._
 import pushka._
+import pushka.annotation.pushka
+
+object DefaultRWSpec {
+
+  @pushka case class Id[+T](value: Int)
+
+  implicit def idOk[T] = new ObjectKey[Id[T]] {
+    def stringify(x: Id[T]): String = x.value.toString
+    def parse(x: String): Id[T] = Id(x.toInt)
+  }
+
+  @pushka case class ArbitaryKey(x: Int)
+}
 
 class DefaultRWSpec extends FlatSpec with Matchers {
+
+  import DefaultRWSpec._
 
   "Option" should "be read from simple value" in {
     read[Option[String]](Ast.Str("hello")) should be(Option("hello"))
@@ -114,8 +129,8 @@ class DefaultRWSpec extends FlatSpec with Matchers {
     exception.message should be(s"Error while reading AST $invalidAst to Seq")
   }
 
-  "Map" should "be written to array of kv pairs" in {
-    val source = Map(0 → "a", 1 → "b")
+  "Map with arbitrary key" should "be written to array of kv pairs" in {
+    val source = Map(ArbitaryKey(0) → "a", ArbitaryKey(1) → "b")
     val pattern = Ast.Arr(List(
       Ast.Arr(List(Ast.Num(0), Ast.Str("a"))),
       Ast.Arr(List(Ast.Num(1), Ast.Str("b")))
@@ -123,19 +138,46 @@ class DefaultRWSpec extends FlatSpec with Matchers {
     write(source) shouldEqual pattern
   }
   it should "be read from array of pairs" in {
-    val pattern = Map(0 → "a", 1 → "b")
+    val pattern = Map(ArbitaryKey(0) → "a", ArbitaryKey(1) → "b")
     val source = Ast.Arr(List(
       Ast.Arr(List(Ast.Num(0), Ast.Str("a"))),
       Ast.Arr(List(Ast.Num(1), Ast.Str("b")))
     ))
-    read[Map[Int, String]](source) shouldEqual pattern
+    read[Map[ArbitaryKey, String]](source) shouldEqual pattern
   }
   it should "throw exception with correct message if Ast is invalid" in {
     val invalidAst = Ast.Null
     val exception = intercept[PushkaException] {
-      read[Map[Int, String]](invalidAst)
+      read[Map[ArbitaryKey, String]](invalidAst)
     }
     exception.message should be(s"Error while reading AST $invalidAst to Map")
+  }
+
+  "Map which key could be converted to string by default" should "be written to JSON object" in {
+    val source = Map("0" → "a", "1" → "b")
+    val pattern = Ast.Obj(Map("0" → Ast.Str("a"), "1" → Ast.Str("b")))
+    write(source) shouldEqual pattern
+  }
+  it should "be read from JSON object" in {
+    val pattern = Map(
+      UUID.fromString("102b392e-862d-45e4-8140-35493598dff7") → "a",
+      UUID.fromString("2c2fe2ce-1f6d-4cca-8ade-68a7bedc226f") → "b")
+    val source = Ast.Obj(Map(
+      "102b392e-862d-45e4-8140-35493598dff7" → Ast.Str("a"),
+      "2c2fe2ce-1f6d-4cca-8ade-68a7bedc226f" → Ast.Str("b"))
+    )
+    read[Map[UUID, String]](source) shouldEqual pattern
+  }
+
+  "Map which custom key could be converted to string" should "be written to JSON object" in {
+    val source = Map(Id[ArbitaryKey](0) → "a", Id[ArbitaryKey](1) → "b")
+    val pattern = Ast.Obj(Map("0" → Ast.Str("a"), "1" → Ast.Str("b")))
+    write(source) shouldEqual pattern
+  }
+  it should "be read from JSON object" in {
+    val pattern = Map(Id[ArbitaryKey](0) → "a", Id[ArbitaryKey](1) → "b")
+    val source = Ast.Obj(Map("0" → Ast.Str("a"), "1" → Ast.Str("b")))
+    read[Map[Id[ArbitaryKey], String]](source) shouldEqual pattern
   }
 
   "Set" should "be read from array" in {
