@@ -9,6 +9,11 @@ trait DefaultObjectKeys {
     def parse(x: String): Int = x.toInt
   }
 
+  implicit val doubleOk = new ObjectKey[Double] {
+    def stringify(x: Double): String = x.toString
+    def parse(x: String): Double = x.toDouble
+  }
+
   implicit val stringToOK = new ObjectKey[String] {
     def stringify(x: String): String = x
     def parse(x: String): String = x

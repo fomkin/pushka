@@ -19,7 +19,7 @@ package object pushka extends DefaultRWs with DefaultObjectKeys {
     }
   }
 
-  case class PushkaException(message: String = "") extends Exception("")
+  case class PushkaException(message: String = "") extends Exception(message)
 
   trait RW[T] extends Reader[T] with Writer[T]
 
