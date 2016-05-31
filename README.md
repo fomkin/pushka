@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/fomkin/pushka.svg?branch=develop)](https://travis-ci.org/fomkin/pushka)
 
-Pushka is a pickler implemented without any runtime reflection. It created to reach well human readability of output JSON and good performance. Pushka works well both on Scala and Scala.js.
+Pushka is a pickler implemented without any runtime reflection. It created to reach well human readability of output JSON and good performance. Pushka works well both on Scala (2.10, 2.11) and Scala.js.
 
 # Motivation
 
@@ -34,18 +34,17 @@ Let define types we want to write to JSON.
 ```scala
 import pushka.annotation._
 
-@pushka 
-case class User(email: String, name: Option[String], role: Role)
+@pushka case class User(
+  email: String,
+  name: Option[String],
+  role: Role
+)
 
-@puska
-sealed trait Role
+@puska sealed trait Role
 
 object Role {
-
   case object Moderator extends Role
-  
   case object Accountant extends Role
-  
   case class Group(xs: Seq[Role]) extends Role
 }
 ```
@@ -122,8 +121,7 @@ assert {
 That if we add new field to class and try to read JSON written to KV storage with an old version of the class? An exception will be thrown. To avoid this behavior add new filed with default value.
 
 ```scala
-@pushka 
-case class User(
+@pushka case class User(
   email: String, 
   name: Option[String], 
   role: Role, 
@@ -138,6 +136,55 @@ Pushka allows to define the key that a field is serialized with via a `@key` ann
 ```scala
 @pushka
 case class Log(@key("@ts") timestamp: String, message: String)
+```
+### `Map` writing
+
+Obviously `Map[K, V]` should be written as `{}` and this is true when `K` is `String`, `Int`, `Double` or `UUID`. But several `K` types can't be written as JSON object key. Consider `case class Point(x: Int, y: Int)`. This type will be written to JSON object. In this case `Map[Point, T]` will be written as sequence of tuples.
+
+```scala
+@pushka case class Point(x: Int, y: Int)
+
+val m: Map[Point, String] = Map(
+  Point(0,1) -> "John",
+  Point(1,0) -> "Jane"
+)
+
+write(m)
+```
+```json
+[
+  [ { "x": 1, "y": 0 }, "John" ],
+  [ { "x": 0, "y": 1 }, "Jane" ]
+]
+```
+
+If you want to write such maps as `{}` you should prove that `K` type can be written as string.
+
+```scala
+@pushka case class Point(x: Int, y: Int)
+
+object Point {
+  val pointOk = new puska.ObjectKey[Point] {
+    def stringify(value: Point): String = s"${value.x}:${value.y}"
+    def parse(s: String): Point = {
+      val Array(x, y) = s.split(":")
+      Point(x.toInt, y.toInt) 
+    }
+  }
+}
+
+val m: Map[Point, String] = Map(
+  Point(0,1) -> "John",
+  Point(1,0) -> "Jane"
+)
+
+write(m)
+```
+```json
+{
+  "0:1": "John",
+  "1:0": "Jane"
+}
 ```
 
 ### Custom readers and writers

@@ -1,6 +1,8 @@
 package pushka
 
 import java.util.UUID
+import scala.language.higherKinds
+import pushka.internal.Not
 
 class DefaultRWs extends Generated {
 
@@ -142,8 +144,20 @@ class DefaultRWs extends Generated {
     def write(value: List[T]): Ast = writeIterable(value)
   }
 
-  implicit def mapW[K, V](implicit w: Writer[(K, V)]): Writer[Map[K, V]] = new Writer[Map[K, V]] {
-    def write(value: Map[K, V]): Ast = writeIterable(value)
+  implicit def mapW[K, V](implicit w: Writer[(K, V)], ev: Not[ObjectKey[K]]): Writer[Map[K, V]] = {
+    new Writer[Map[K, V]] {
+      def write(value: Map[K, V]): Ast = writeIterable(value)
+    }
+  }
+
+  implicit def mapAsObjectW[K, V](implicit w: Writer[V], ev: ObjectKey[K]): Writer[Map[K, V]] = {
+    new Writer[Map[K, V]] {
+      def write(value: Map[K, V]): Ast = {
+        Ast.Obj(value map {
+          case (k, v) ⇒ (ev.stringify(k), w.write(v))
+        })
+      }
+    }
   }
 
   implicit def seqR[T](implicit r: Reader[T]): Reader[Seq[T]] = new Reader[Seq[T]] {
@@ -174,10 +188,21 @@ class DefaultRWs extends Generated {
     }
   }
 
-  implicit def mapR[K, V](implicit r: Reader[(K, V)]): Reader[Map[K, V]] = {
+  implicit def mapR[K, V](implicit r: Reader[(K, V)], ev: Not[ObjectKey[K]]): Reader[Map[K, V]] = {
     new Reader[Map[K, V]] {
       def read(value: Ast): Map[K, V] = value match {
         case Ast.Arr(xs) ⇒ (for (x ← xs) yield r.read(x)).toMap
+        case _ ⇒ throw PushkaException(value, Map.getClass)
+      }
+    }
+  }
+
+  implicit def mapAsObjectR[K, V](implicit rv: Reader[V], ev: ObjectKey[K]): Reader[Map[K, V]] = {
+    new Reader[Map[K, V]] {
+      def read(value: Ast): Map[K, V] = value match {
+        case Ast.Obj(m) ⇒ m map {
+          case (k, v) ⇒ (ev.parse(k), rv.read(v))
+        }
         case _ ⇒ throw PushkaException(value, Map.getClass)
       }
     }
