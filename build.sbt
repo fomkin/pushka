@@ -31,7 +31,6 @@ val publishSettings = Seq(
 )
 
 val commonSettings = publishSettings ++ Seq(
-  scalaVersion := "2.11.8",
   organization := "com.github.fomkin",
   version := "0.5.0",
   libraryDependencies += "org.scalatest" %%% "scalatest" % "3.0.0-M15" % "test",
@@ -48,7 +47,11 @@ lazy val core = crossProject.crossType(CrossType.Pure).
   settings(commonSettings: _*).
   settings(
     normalizedName := "pushka-core",
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "macro-compat" % "1.1.1",
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided"
+    ),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
     sourceGenerators in Compile <+= sourceManaged in Compile map GenTuples
   )
@@ -62,7 +65,7 @@ lazy val json = crossProject.crossType(CrossType.Full).
     normalizedName := "pushka-json",
     unmanagedSourceDirectories in Test += baseDirectory.value / ".." / "test-src"
   ).
-  jvmSettings(libraryDependencies += "org.spire-math" %% "jawn-parser" % "0.8.3").
+  jvmSettings(libraryDependencies += "org.spire-math" %% "jawn-parser" % "0.8.4").
   dependsOn(core)
 
 lazy val jsonJS = json.js
@@ -70,6 +73,6 @@ lazy val jsonJVM = json.jvm
 
 publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
 
-scalaVersion := "2.11.8"
+crossScalaVersions := Seq("2.10.6", "2.11.8")
 
 publishArtifact := false

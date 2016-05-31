@@ -1,22 +1,26 @@
 package pushka.annotation
 
-import scala.annotation.{StaticAnnotation, tailrec}
 import scala.language.experimental.macros
 import scala.language.postfixOps
+
+import scala.annotation.{StaticAnnotation, tailrec}
 import scala.reflect.macros.blackbox
 
+import macrocompat.bundle
+
 class pushka extends StaticAnnotation {
-  def macroTransform(annottees: Any*): Any = macro pushkaMacro.impl
+  def macroTransform(annottees: Any*): Any =
+    macro PushkaAnnotatioMacro.impl
 }
 
 /**
  * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
  */
-object pushkaMacro {
+@bundle class PushkaAnnotatioMacro(val c: blackbox.Context) {
 
-  def impl(c: blackbox.Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
+  import c.universe._
 
-    import c.universe._
+  def impl(annottees: c.Expr[Any]*): c.Expr[Any] = {
 
     def checkValDefIsOption(x: ValDef): Boolean = {
       x.tpt.children.headOption match {
