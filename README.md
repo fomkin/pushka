@@ -129,7 +129,7 @@ That if we add new field to class and try to read JSON written to KV storage wit
 )
 ```
 
-### @key annotation
+### `@key` annotation
 
 Pushka allows to define the key that a field is serialized with via a `@key` annotation
 
@@ -137,6 +137,19 @@ Pushka allows to define the key that a field is serialized with via a `@key` ann
 @pushka
 case class Log(@key("@ts") timestamp: String, message: String)
 ```
+
+### `@forceObject` annotation
+
+Case classes with one field writes without object wrapper by default. To avoid this behavior use `@forceObject` annotation.
+
+```scala
+@pushka case class Id(value: String)
+write(Id("9f3ce5")) // "9f3ce5"
+
+@pushka @forceObject case class Id(value: String) 
+write(Id("9f3ce5")) // { "value": "9f3ce5" }
+```
+
 ### `Map` writing
 
 Obviously `Map[K, V]` should be written as `{}` and this is true when `K` is `String`, `Int`, `Double` or `UUID`. But several `K` types can't be written as JSON object key. Consider `case class Point(x: Int, y: Int)`. This type will be written to JSON object. In this case `Map[Point, T]` will be written as sequence of tuples.
