@@ -2,13 +2,13 @@
 
 [![Build Status](https://travis-ci.org/fomkin/pushka.svg?branch=develop)](https://travis-ci.org/fomkin/pushka)
 
-Pushka is a pickler implemented without any runtime reflection. It created to reach well human readability of output JSON and good performance. Pushka works well both on Scala (2.10, 2.11) and Scala.js.
+Pushka is a serialization library implemented without any runtime reflection. It created to reach well human readability of output JSON and good performance. Pushka works well both on Scala (2.10, 2.11) and Scala.js.
 
 # Motivation
 
-1. Most of picklers are writes case classes "as is". For example if we have `Option` value it will be writeen with some kind of wrapper. In the case of sealed traits, most picklers writes metadata: trait name and case class name. This make JSON unreadable by human and make it usless for creating public API. We want to achive high human readablility of output JSON: no wrappers if it possible, no metadata ever.
+1. Most of the serialization libraries are writes case classes "as is". For example, if we have `Option` value it will be written with some kind of wrapper. In the case of sealed traits, most libraries write metadata: trait name and case class name. This makes JSON unreadable by human and makes it useless for creating public API. We want to achieve high human readability of output JSON: no wrappers if it possible, no metadata ever.
 
-2. Codebase simplicity. In our work we encountered that some picklers based on implicit macros (including shapeless base picklers) are fails on our data. In this project we want make code as simple as possible to find bugs faster.
+2. Codebase simplicity. In our work, we encountered that some libraries based on implicit macros (including shapeless based) are fails on our data. In this project, we want to make the code as simple as possible to find bugs faster.
 
 3. High performance. Minimum runtime overhead. See [Boopickle benchmarks](http://ochrons.github.io/boopickle-perftest/).
 
@@ -24,7 +24,7 @@ libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.6.0"
 // For Scala.jvm
 libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.6.0"
 ```
-Pushka uses marco annotations which implemented in macro paradise plugin. Unfortunately it can't be added transitively by Pushka dependency, so you need to plug it manually.
+Pushka uses macro annotations which implemented in macro paradise plugin. Unfortunately, it can't be added transitively by Pushka dependency, so you need to plug it manually.
 
 ```scala
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
@@ -95,7 +95,9 @@ data.copy(name = Some("Jonh Doe"))
   }  
 }
 ```
-Now, in the opposite direction. Lets read JSON.
+
+Now, in the opposite direction. Let's read JSON.
+
 ```scala
 val json = """
   {
@@ -118,7 +120,7 @@ assert {
 
 ### Case class default parameters
 
-That if we add new field to class and try to read JSON written to KV storage with an old version of the class? An exception will be thrown. To avoid this behavior add new filed with default value.
+That if we add the new field to class and try to read JSON written to KV storage with an old version of the class? An exception will be thrown. To avoid this behavior add the new field with a default value.
 
 ```scala
 @pushka case class User(
@@ -131,7 +133,7 @@ That if we add new field to class and try to read JSON written to KV storage wit
 
 ### `@key` annotation
 
-Pushka allows to define the key that a field is serialized with via a `@key` annotation
+Pushka allows defining the key that a field is serialized with via a `@key` annotation.
 
 ```scala
 @pushka
@@ -140,7 +142,7 @@ case class Log(@key("@ts") timestamp: String, message: String)
 
 ### `@forceObject` annotation
 
-Case classes with one field writes without object wrapper by default. To avoid this behavior use `@forceObject` annotation.
+Case classes with one field write without object wrapper by default. To avoid this behavior use `@forceObject` annotation.
 
 ```scala
 @pushka case class Id(value: String)
@@ -152,7 +154,7 @@ write(Id("9f3ce5")) // { "value": "9f3ce5" }
 
 ### `Map` writing
 
-Obviously `Map[K, V]` should be written as `{}` and this is true when `K` is `String`, `Int`, `Double` or `UUID`. But several `K` types can't be written as JSON object key. Consider `case class Point(x: Int, y: Int)`. This type will be written to JSON object. In this case `Map[Point, T]` will be written as sequence of tuples.
+Obviously `Map[K, V]` should be written as `{}` and this is true when `K` is `String`, `Int`, `Double` or `UUID`. But several `K` types can't be written as JSON object key. Consider `case class Point(x: Int, y: Int)`. This type will be written to JSON object. In this case `Map[Point, T]` will be written as a sequence of tuples.
 
 ```scala
 @pushka case class Point(x: Int, y: Int)
