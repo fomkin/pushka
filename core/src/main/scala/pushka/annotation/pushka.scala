@@ -1,22 +1,26 @@
 package pushka.annotation
 
-import scala.annotation.{StaticAnnotation, tailrec}
 import scala.language.experimental.macros
 import scala.language.postfixOps
+
+import scala.annotation.{StaticAnnotation, tailrec}
 import scala.reflect.macros.blackbox
 
+import macrocompat.bundle
+
 class pushka extends StaticAnnotation {
-  def macroTransform(annottees: Any*): Any = macro pushkaMacro.impl
+  def macroTransform(annottees: Any*): Any =
+    macro PushkaAnnotatioMacro.impl
 }
 
 /**
  * @author Aleksey Fomkin <aleksey.fomkin@gmail.com>
  */
-object pushkaMacro {
+@bundle class PushkaAnnotatioMacro(val c: blackbox.Context) {
 
-  def impl(c: blackbox.Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
+  import c.universe._
 
-    import c.universe._
+  def impl(annottees: c.Expr[Any]*): c.Expr[Any] = {
 
     def checkValDefIsOption(x: ValDef): Boolean = {
       x.tpt.children.headOption match {
@@ -26,13 +30,30 @@ object pushkaMacro {
       }
     }
 
-    def keyFromField(field: ValDef): String = {
-      val ck = field.mods.annotations collectFirst { case q"new key(${s: String})" ⇒ s }
-      ck.fold(field.name.toString)(identity)
+    def findAnnotationFlag(name: String, annotatios: List[c.Tree]): Boolean = {
+      annotatios exists {
+        case q"new $name()" ⇒ true
+        case _ => false
+      }
+    }
+    def customKeyForFiled(field: ValDef): Option[String] = {
+      field.mods.annotations collectFirst {
+        case q"new key(${s: String})" ⇒ s
+      }
     }
 
-    def caseClassReader(className: TypeName, fields: List[ValDef]) = fields match {
-      case field :: Nil ⇒
+    def keyFromField(field: ValDef): String = {
+      customKeyForFiled(field).fold(field.name.toString)(identity)
+    }
+
+    def caseClassReader(className: TypeName, fields: List[ValDef], annotations: List[c.Tree]) = fields match {
+      case field :: Nil if !findAnnotationFlag("forceObject", annotations) ⇒
+        if (customKeyForFiled(field).nonEmpty) {
+          c.warning(field.pos,
+            "@key annotation will ignored cause classes with one filed writes without object " +
+            "wrapper. Use @forceObject annotation to avoid with behavior."
+          )
+        }
         q"${className.toTermName}(pushka.read[${field.tpt}](value))"
       case _ ⇒
         val fReaders = fields map { x ⇒
@@ -56,8 +77,8 @@ object pushkaMacro {
         """
     }
 
-    def caseClassWriter(className: TypeName, fields: List[ValDef]) = fields match {
-      case field :: Nil ⇒
+    def caseClassWriter(className: TypeName, fields: List[ValDef], annotations: List[c.Tree]) = fields match {
+      case field :: Nil if !findAnnotationFlag("forceObject", annotations) ⇒
         q"pushka.write(value.${field.name})"
       case _ ⇒
         def basicW(filed: ValDef) = {
@@ -83,9 +104,9 @@ object pushkaMacro {
         """
     }
 
-    def caseClassRW(className: TypeName, typeParams: List[TypeDef], fields: List[ValDef]) = {
-      val reader = caseClassReader(className, fields)
-      val writer = caseClassWriter(className, fields)
+    def caseClassRW(className: TypeName, typeParams: List[TypeDef], fields: List[ValDef], annotations: List[c.Tree]) = {
+      val reader = caseClassReader(className, fields, annotations)
+      val writer = caseClassWriter(className, fields, annotations)
 
       typeParams match {
         case Nil ⇒
@@ -129,7 +150,7 @@ object pushkaMacro {
       @tailrec def genUpdatedBody(acc: List[Tree], tail: List[Tree]): List[Tree] = {
         def checkCaseClass(classDecl: ClassDef, compDecl: Option[ModuleDef]) = classDecl match {
           case q"$mods class $n(..$fields) extends ..$p { ..$body }" if mods.hasFlag(Flag.CASE) && checkSuperClass(p) ⇒
-            classDecl :: modifiedCompanion(compDecl, caseClassRW(n, Nil, fields), n) :: acc
+            classDecl :: modifiedCompanion(compDecl, caseClassRW(n, Nil, fields, mods.annotations), n) :: acc
           case _ ⇒ classDecl :: acc
         }
         def compareNames(classDecl: ClassDef, compDecl: ModuleDef): Boolean = {
@@ -234,11 +255,11 @@ object pushkaMacro {
 
     def modifiedDeclaration(classDecl: ClassDef, compDeclOpt: Option[ModuleDef] = None) = {
       val compDecl = classDecl match {
-        case q"case class $className[..$typeParams](..$fields) extends ..$bases { ..$body }" ⇒
-          val rw = caseClassRW(className, typeParams, fields)
+        case q"$mods class $className[..$typeParams](..$fields) extends ..$bases { ..$body }" if mods.hasFlag(Flag.CASE) ⇒
+          val rw = caseClassRW(className, typeParams, fields, mods.annotations)
           modifiedCompanion(compDeclOpt, rw, className)
-        case q"case class $className(..$fields) extends ..$bases { ..$body }" ⇒
-          val rw = caseClassRW(className, Nil, fields)
+        case q"$mods class $className(..$fields) extends ..$bases { ..$body }" if mods.hasFlag(Flag.CASE) ⇒
+          val rw = caseClassRW(className, Nil, fields, mods.annotations)
           modifiedCompanion(compDeclOpt, rw, className)
         case ClassDef(mods, traitName, _, _) if mods.hasFlag(Flag.SEALED) && mods.hasFlag(Flag.TRAIT) ⇒
           compDeclOpt match {

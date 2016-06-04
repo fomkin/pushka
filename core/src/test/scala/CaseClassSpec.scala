@@ -10,6 +10,7 @@ object CaseClassSpec {
   @pushka case class Point[T](x: T, y: T)
   @pushka case class WithDefaultParams(x: Int, y: Int = 100)
   @pushka case class WithKeyAnnotation(@key("@theX") x: Int, y: Int)
+  @pushka @forceObject case class AppleReceipt(@key("receipt-data") receiptData: String)
 }
 
 class CaseClassSpec extends FlatSpec with Matchers {
@@ -167,5 +168,17 @@ class CaseClassSpec extends FlatSpec with Matchers {
       read[WithKeyAnnotation](invalidAst)
     }
     exception.message should be(s"Error while reading AST $invalidAst to WithKeyAnnotation")
+  }
+
+  "Case class annotated with @forceObject and having one field" should "be written as object" in {
+    val source = AppleReceipt("hello")
+    val pattern = Ast("receipt-data" -> "hello")
+    write(source) should be (pattern)
+  }
+
+  it should "be read from object" in {
+    val pattern = AppleReceipt("hello")
+    val source = Ast("receipt-data" -> "hello")
+    read[AppleReceipt](source) should be (pattern)
   }
 }
