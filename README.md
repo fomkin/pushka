@@ -1,8 +1,6 @@
 # Pushka
 
-[![Join the chat at https://gitter.im/fomkin/pushka](https://badges.gitter.im/fomkin/pushka.svg)](https://gitter.im/fomkin/pushka?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-[![Build Status](https://travis-ci.org/fomkin/pushka.svg?branch=develop)](https://travis-ci.org/fomkin/pushka)
+[![Build Status](https://travis-ci.org/fomkin/pushka.svg?branch=develop)](https://travis-ci.org/fomkin/pushka) [![Join the chat at https://gitter.im/fomkin/pushka](https://badges.gitter.im/fomkin/pushka.svg)](https://gitter.im/fomkin/pushka?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Pushka is a serialization library implemented without any runtime reflection. It created to reach well human readability of output JSON and good performance. Pushka works well both on Scala (2.10, 2.11) and Scala.js.
 
@@ -21,10 +19,10 @@ Add Pushka dependency to your project.
 
 ```scala
 // For Scala.js
-libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.6.0"
+libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.6.1"
 
 // For Scala.jvm
-libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.6.0"
+libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.6.1"
 ```
 Pushka uses macro annotations which implemented in macro paradise plugin. Unfortunately, it can't be added transitively by Pushka dependency, so you need to plug it manually.
 
@@ -56,8 +54,8 @@ Ok. Now let create data and write it to JSON
 import pushka.json._
 
 val data = User(
-  email = "john@example.com", 
-  name = None, 
+  email = "john@example.com",
+  name = None,
   role = Role.Accountant
 )
 
@@ -113,8 +111,8 @@ val json = """
 
 assert {
   read[User](json) == User(
-    email = "john@example.com", 
-    name = Some("Jonh Doe"), 
+    email = "john@example.com",
+    name = Some("Jonh Doe"),
     role = Role.Group(Role.Accountant, Role.Moderator)
   )
 }    
@@ -126,9 +124,9 @@ That if we add the new field to class and try to read JSON written to KV storage
 
 ```scala
 @pushka case class User(
-  email: String, 
-  name: Option[String], 
-  role: Role, 
+  email: String,
+  name: Option[String],
+  role: Role,
   photoUrl: String = "http://example.com/images/users/dafault.jpg"
 )
 ```
@@ -150,7 +148,7 @@ Case classes with one field write without object wrapper by default. To avoid th
 @pushka case class Id(value: String)
 write(Id("9f3ce5")) // "9f3ce5"
 
-@pushka @forceObject case class Id(value: String) 
+@pushka @forceObject case class Id(value: String)
 write(Id("9f3ce5")) // { "value": "9f3ce5" }
 ```
 
@@ -185,7 +183,7 @@ object Point {
     def stringify(value: Point): String = s"${value.x}:${value.y}"
     def parse(s: String): Point = {
       val Array(x, y) = s.split(":")
-      Point(x.toInt, y.toInt) 
+      Point(x.toInt, y.toInt)
     }
   }
 }
@@ -239,7 +237,7 @@ write(User("John", "Doe"))
 You can configure Pushka to write `None` explictly.
 
 ```scala
-@pushka 
+@pushka
 case class User(email: String, name: Option[String])
 
 implicit val config = pushka.Config(leanOptions = false)
@@ -251,4 +249,4 @@ write(User("john@example.com", None))
 
 # License
 
-Code released under Apache 2.0 license. See [LICENSE](https://github.com/fomkin/pushka/blob/develop/LICENSE). 
+Code released under Apache 2.0 license. See [LICENSE](https://github.com/fomkin/pushka/blob/develop/LICENSE).
