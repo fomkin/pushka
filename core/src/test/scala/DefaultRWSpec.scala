@@ -129,6 +129,24 @@ class DefaultRWSpec extends FlatSpec with Matchers {
     exception.message should be(s"Error while reading AST $invalidAst to Seq")
   }
 
+  "Array" should "be read from array" in {
+    val source = Ast.Arr(List(Ast.Num(1), Ast.Num(2), Ast.Num(3)))
+    val pattern = Array(1, 2, 3)
+    read[Array[Int]](source) should be(pattern)
+  }
+  it should "be written to array" in {
+    val pattern = Ast.Arr(List(Ast.Num(1), Ast.Num(2), Ast.Num(3)))
+    val source = Array(1, 2, 3)
+    write(source) should be(pattern)
+  }
+  it should "throw exception with correct message if Ast is invalid" in {
+    val invalidAst = Ast.Num(1)
+    val exception = intercept[PushkaException] {
+      read[Array[Int]](invalidAst)
+    }
+    exception.message should be(s"Error while reading AST $invalidAst to Array")
+  }
+
   "Map with arbitrary key" should "be written to array of kv pairs" in {
     val source = Map(ArbitaryKey(0) → "a", ArbitaryKey(1) → "b")
     val pattern = Ast.Arr(List(
