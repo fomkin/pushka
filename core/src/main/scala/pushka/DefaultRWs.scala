@@ -1,8 +1,11 @@
 package pushka
 
 import java.util.UUID
+
 import scala.language.higherKinds
 import pushka.internal.Not
+
+import scala.reflect.ClassTag
 
 class DefaultRWs extends Generated {
 
@@ -144,6 +147,10 @@ class DefaultRWs extends Generated {
     def write(value: List[T]): Ast = writeIterable(value)
   }
 
+  implicit def arrayW[T](implicit w: Writer[T]): Writer[Array[T]] = new Writer[Array[T]] {
+    def write(value: Array[T]): Ast = writeIterable(value)
+  }
+
   implicit def mapW[K, V](implicit w: Writer[(K, V)], ev: Not[ObjectKey[K]]): Writer[Map[K, V]] = {
     new Writer[Map[K, V]] {
       def write(value: Map[K, V]): Ast = writeIterable(value)
@@ -185,6 +192,13 @@ class DefaultRWs extends Generated {
     def read(value: Ast): List[T] = value match {
       case Ast.Arr(xs) ⇒ xs.map(r.read).toList
       case _ ⇒ throw PushkaException(value, List.getClass)
+    }
+  }
+
+  implicit def arrayR[T](implicit r: Reader[T], classTag: ClassTag[T]): Reader[Array[T]] = new Reader[Array[T]] {
+    def read(value: Ast): Array[T] = value match {
+      case Ast.Arr(xs) ⇒ xs.map(r.read).toArray
+      case _ ⇒ throw PushkaException(value, Array.getClass)
     }
   }
 
