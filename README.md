@@ -179,7 +179,7 @@ If you want to write such maps as `{}` you should prove that `K` type can be wri
 @pushka case class Point(x: Int, y: Int)
 
 object Point {
-  val pointOk = new puska.ObjectKey[Point] {
+  implicit val pointOk = new puska.ObjectKey[Point] {
     def stringify(value: Point): String = s"${value.x}:${value.y}"
     def parse(s: String): Point = {
       val Array(x, y) = s.split(":")
