@@ -66,7 +66,15 @@ class pushka extends StaticAnnotation {
                 getOrElse(${x.rhs})
             """
           } else {
-            q"${x.name} = pushka.read[${x.tpt}](m(${keyFromField(x)}))"
+            q"""
+              ${x.name} =
+                if (m.contains(${keyFromField(x)})) {
+                  pushka.read[${x.tpt}](m(${keyFromField(x)}))
+                } else {
+                  throw new pushka.PushkaException(
+                    ${className.toString} + " should contain " + ${keyFromField(x)})
+                }
+             """
           }
         }
         q"""

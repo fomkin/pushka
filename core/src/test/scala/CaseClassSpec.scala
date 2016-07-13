@@ -45,6 +45,18 @@ class CaseClassSpec extends FlatSpec with Matchers {
     exception.message should be(s"Error while reading AST $invalidAst to MyCaseClass")
   }
 
+  it should "throw exception with correct message if some fields are not defined" in {
+    val invalidAst = Ast(
+      "x" → pushka.Ast.Num(10),
+      "z" → pushka.Ast.Str("vodka")
+    )
+    val exception = intercept[PushkaException] {
+      read[MyCaseClass](invalidAst)
+    }
+
+    exception.message should be(s"MyCaseClass should contain y")
+  }
+
   "Case classes with one filed" should "be written as value" in {
     val source = Id[String](10)
     write[Id[String]](source) should be(Ast.Num(10))
