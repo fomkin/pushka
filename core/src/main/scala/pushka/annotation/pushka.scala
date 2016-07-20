@@ -20,15 +20,30 @@ class pushka extends StaticAnnotation {
 
   import c.universe._
 
-  def impl(annottees: c.Expr[Any]*): c.Expr[Any] = {
-
-    def checkValDefIsOption(x: ValDef): Boolean = {
-      x.tpt.children.headOption match {
-        case Some(tpeIdent: Ident) ⇒
-          tpeIdent.name == TypeName("Option")
-        case _ ⇒ false
+  def computeType(tpt: Tree): Type = {
+    if (tpt.tpe != null) {
+      tpt.tpe
+    } else {
+      val calculatedType = c.typecheck(tpt.duplicate, silent = true, withMacrosDisabled = true).tpe
+      val result = if (tpt.tpe == null) calculatedType else tpt.tpe
+      if (result == NoType) {
+        val expr = q"0.asInstanceOf[$tpt]"
+        val checkedExpr = c.typecheck(expr)
+        checkedExpr.tpe
+      } else {
+        result
       }
     }
+  }
+
+  implicit private class ValDefOps(val self: ValDef) {
+    def is[T: TypeTag]: Boolean = self.tpt.children.headOption match {
+      case Some(_: Ident) ⇒ computeType(self.tpt) <:< c.typeOf[T]
+      case _ ⇒ false
+    }
+  }
+
+  def impl(annottees: c.Expr[Any]*): c.Expr[Any] = {
 
     def findAnnotationFlag(name: String, annotatios: List[c.Tree]): Boolean = {
       annotatios exists {
@@ -57,14 +72,14 @@ class pushka extends StaticAnnotation {
         q"${className.toTermName}(pushka.read[${field.tpt}](value))"
       case _ ⇒
         val fReaders = fields map { x ⇒
-          if (checkValDefIsOption(x)) {
-            q"${x.name} = m.get(${keyFromField(x)}).flatMap(x => pushka.read[${x.tpt}](x))"
-          } else if (x.rhs.nonEmpty) {
+          if (x.rhs.nonEmpty) {
             q"""
               ${x.name} = m.get(${keyFromField(x)}).
                 map(x => pushka.read[${x.tpt}](x)).
                 getOrElse(${x.rhs})
             """
+          } else if (x.is[Option[_]]) {
+            q"${x.name} = m.get(${keyFromField(x)}).flatMap(x => pushka.read[${x.tpt}](x))"
           } else {
             q"""
               ${x.name} =
@@ -93,7 +108,7 @@ class pushka extends StaticAnnotation {
           val key = keyFromField(filed)
           q"$key -> pushka.write(value.${filed.name})"
         }
-        val (nonOpts, opts) = fields.partition(!checkValDefIsOption(_))
+        val (nonOpts, opts) = fields.partition(!_.is[Option[_]])
         val nonOptsWriters = nonOpts.map(x ⇒ q"b.append(${basicW(x)})")
         val optsWriters = opts map { x ⇒
           q"""
