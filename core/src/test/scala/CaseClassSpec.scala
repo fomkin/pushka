@@ -8,7 +8,7 @@ object CaseClassSpec {
   @pushka case class MyCaseClass3(x: (String, Double), y: String)
   @pushka case class Id[+T](x: Int)
   @pushka case class Point[T](x: T, y: T)
-  @pushka case class WithDefaultParams(x: Int, y: Int = 100)
+  @pushka case class WithDefaultParams(x: Int, y: Int = 100, z: Option[Int] = Some(1))
   @pushka case class WithKeyAnnotation(@key("@theX") x: Int, y: Int)
   @pushka @forceObject case class AppleReceipt(@key("receipt-data") receiptData: String)
 }
@@ -151,7 +151,7 @@ class CaseClassSpec extends FlatSpec with Matchers {
 
   "Case class with default params" should "be read with default parameter if it was not defined in AST" in {
     val source = Ast.Obj(Map("x" → Ast.Num(1)))
-    val pattern = WithDefaultParams(1, 100)
+    val pattern = WithDefaultParams(1, 100, Some(1))
     read[WithDefaultParams](source) shouldEqual pattern
   }
 
