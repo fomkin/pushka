@@ -14,9 +14,9 @@ class ParserSpec extends FlatSpec with Matchers {
 
   "Array" should "be unmarshaled" in {
     parser.parse("[1,2,3]") shouldEqual Ast.Arr(List(
-      Ast.Num(1),
-      Ast.Num(2),
-      Ast.Num(3)
+      Ast.Num("1"),
+      Ast.Num("2"),
+      Ast.Num("3")
     ))
   }
 }

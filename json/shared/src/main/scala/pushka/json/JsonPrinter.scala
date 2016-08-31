@@ -21,7 +21,7 @@ final class JsonPrinter extends Printer[String] {
       case Ast.Null => sb.append("null")
       case Ast.True => sb.append("true")
       case Ast.False => sb.append("false")
-      case Ast.Num(n) => sb.append(if (n == n.toInt) n.toInt.toString else n.toString)
+      case Ast.Num(n) => sb.append(n)
       case Ast.Str(s) => renderString(sb, s)
       case Ast.Arr(xs) => renderArray(sb, depth, xs)
       case Ast.Obj(vs) => renderObject(sb, depth, canonicalizeObject(vs))

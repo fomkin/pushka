@@ -58,7 +58,7 @@ class SealedTraitSpec extends FlatSpec with Matchers {
             "first" → Ast.Str("John"),
             "last" → Ast.Str("Doe"))
           ))),
-        "anotherField" → Ast.Num(10.0)
+        "anotherField" → Ast.Num("10")
       ))
     )
   }
@@ -68,7 +68,7 @@ class SealedTraitSpec extends FlatSpec with Matchers {
     write(instance) should be(
       Ast.Obj(Map(
         "user" → Ast.Str("empty"),
-        "anotherField" → Ast.Num(10.0))
+        "anotherField" → Ast.Num("10"))
       )
     )
   }

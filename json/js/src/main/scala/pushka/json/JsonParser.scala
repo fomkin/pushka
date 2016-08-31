@@ -9,7 +9,7 @@ final class JsonParser extends Parser[String] {
 
   private[this] def readAst(value: Any): Ast = value match{
     case s: String => Ast.Str(s)
-    case n: Double => Ast.Num(n)
+    case n: Double => Ast.Num(n.toString)
     case true => Ast.True
     case false => Ast.False
     case null => Ast.Null

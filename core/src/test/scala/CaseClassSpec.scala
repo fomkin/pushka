@@ -124,22 +124,22 @@ class CaseClassSpec extends FlatSpec with Matchers {
     val pattern = Ast.Obj(Map(
       "x" → Ast.Arr(Seq(
         Ast.Str("bear"),
-        Ast.Num(9)
+        Ast.Num(9d)
       )),
       "y" → Ast.Str("vodka"))
     )
-    write(MyCaseClass3(("bear", 9), "vodka")) should be(pattern)
+    write(MyCaseClass3(("bear", 9d), "vodka")) should be(pattern)
   }
 
   it should "be read" in {
     val source = Ast.Obj(Map(
       "x" → Ast.Arr(Seq(
         Ast.Str("bear"),
-        Ast.Num(9)
+        Ast.Num("9.0")
       )),
       "y" → Ast.Str("vodka"))
     )
-    val pattern = MyCaseClass3(("bear", 9), "vodka")
+    val pattern = MyCaseClass3(("bear", 9d), "vodka")
     read[MyCaseClass3](source) should be(pattern)
   }
 
