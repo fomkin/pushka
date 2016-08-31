@@ -52,10 +52,10 @@ class DefaultRWSpec extends FlatSpec with Matchers {
   }
 
   "Float" should "be read from number" in {
-    read[Float](Ast.Num(42)) should be(42f)
+    read[Float](Ast.Num("42.0")) should be(42.0f)
   }
   it should "be written to number" in {
-    write(32f) should be(Ast.Num(32))
+    write[Float](32.0f) should be(Ast.Num(32.0f))
   }
   it should "throw exception with correct message if Ast is invalid" in {
     val invalidAst = Ast.Null
@@ -66,10 +66,10 @@ class DefaultRWSpec extends FlatSpec with Matchers {
   }
 
   "Double" should "be read from number" in {
-    read[Double](Ast.Num(42)) should be(42d)
+    read[Double](Ast.Num("42.0")) should be(42d)
   }
   it should "be written to number" in {
-    write(32d) should be(Ast.Num(32))
+    write[Double](32.0d) should be(Ast.Num(32.0d))
   }
   it should "throw exception with correct message if Ast is invalid" in {
     val invalidAst = Ast("foo" → "bar")
@@ -80,10 +80,10 @@ class DefaultRWSpec extends FlatSpec with Matchers {
   }
 
   "Long" should "be read from string" in {
-    read[Long](Ast.Str("42")) should be(42l)
+    read[Long](Ast.Num("609300804742756865")) should be(609300804742756865l)
   }
   it should "be written to string" in {
-    write(32l) should be(Ast.Str("32"))
+    write(609300804742756865l) should be(Ast.Num("609300804742756865"))
   }
   it should "throw exception with correct message if Ast is invalid" in {
     val invalidAst = Ast.Arr(Seq())

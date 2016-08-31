@@ -65,18 +65,18 @@ class DefaultRWs extends Generated {
     }
 
     def write(value: Int): Ast = {
-      Ast.Num(value.toDouble)
+      Ast.Num(value.toString)
     }
   }
 
   implicit val double = new RW[Double] {
     def read(value: Ast): Double = value match {
-      case Ast.Num(x) ⇒ x
+      case Ast.Num(x) ⇒ x.toDouble
       case _ ⇒ throw PushkaException(value, Double.getClass)
     }
 
     def write(value: Double): Ast = {
-      Ast.Num(value)
+      Ast.Num(value.toString)
     }
   }
 
@@ -87,18 +87,18 @@ class DefaultRWs extends Generated {
     }
 
     def write(value: Float): Ast = {
-      Ast.Num(value.toDouble)
+      Ast.Num(value.toString)
     }
   }
 
   implicit val long = new RW[Long] {
     def read(value: Ast): Long = value match {
-      case Ast.Str(x) ⇒ x.toLong
+      case Ast.Num(x) ⇒ x.toLong
       case _ ⇒ throw PushkaException(value, Long.getClass)
     }
 
     def write(value: Long): Ast = {
-      Ast.Str(value.toString)
+      Ast.Num(value.toString)
     }
   }
 

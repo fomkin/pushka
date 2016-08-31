@@ -9,11 +9,11 @@ object PushkaFacade extends SimpleFacade[Ast] {
 
   def jobject(vs: Map[String, Ast]): Ast = Ast.Obj(vs)
 
-  def jint(s: String): Ast = Ast.Num(s.toDouble)
+  def jint(s: String): Ast = Ast.Num(s)
 
   def jfalse(): Ast = Ast.False
 
-  def jnum(s: String): Ast = Ast.Num(s.toDouble)
+  def jnum(s: String): Ast = Ast.Num(s)
 
   def jnull(): Ast = Ast.Null
 
