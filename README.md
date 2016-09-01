@@ -19,10 +19,10 @@ Add Pushka dependency to your project.
 
 ```scala
 // For Scala.js
-libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.6.2"
+libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.7.0"
 
 // For Scala.jvm
-libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.6.2"
+libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.7.0"
 ```
 Pushka uses macro annotations which implemented in macro paradise plugin. Unfortunately, it can't be added transitively by Pushka dependency, so you need to plug it manually.
 
