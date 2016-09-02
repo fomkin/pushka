@@ -232,20 +232,6 @@ write(User("John", "Doe"))
 ```json
 "John Doe"
 ```
-### Write `None` as `null`
-
-You can configure Pushka to write `None` explictly.
-
-```scala
-@pushka
-case class User(email: String, name: Option[String])
-
-implicit val config = pushka.Config(leanOptions = false)
-write(User("john@example.com", None))
-```
-```json
-{ "email": "john@example.com", "name": null }
-```
 
 # License
 

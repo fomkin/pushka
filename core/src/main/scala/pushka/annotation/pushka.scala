@@ -20,33 +20,10 @@ class pushka extends StaticAnnotation {
 
   import c.universe._
 
-  def computeType(tpt: Tree): Type = {
-    if (tpt.tpe != null) {
-      tpt.tpe
-    } else {
-      val calculatedType = c.typecheck(tpt.duplicate, silent = true, withMacrosDisabled = true).tpe
-      val result = if (tpt.tpe == null) calculatedType else tpt.tpe
-      if (result == NoType) {
-        val expr = q"0.asInstanceOf[$tpt]"
-        val checkedExpr = c.typecheck(expr)
-        checkedExpr.tpe
-      } else {
-        result
-      }
-    }
-  }
-
-  implicit private class ValDefOps(val self: ValDef) {
-    def is[T: TypeTag]: Boolean = self.tpt.children.headOption match {
-      case Some(_: Ident) ⇒ computeType(self.tpt) <:< c.typeOf[T]
-      case _ ⇒ false
-    }
-  }
-
   def impl(annottees: c.Expr[Any]*): c.Expr[Any] = {
 
-    def findAnnotationFlag(name: String, annotatios: List[c.Tree]): Boolean = {
-      annotatios exists {
+    def findAnnotationFlag(name: String, annotations: List[c.Tree]): Boolean = {
+      annotations exists {
         case q"new $name()" ⇒ true
         case _ => false
       }
@@ -78,18 +55,19 @@ class pushka extends StaticAnnotation {
                 map(x => pushka.read[${x.tpt}](x)).
                 getOrElse(${x.rhs})
             """
-          } else if (x.is[Option[_]]) {
-            q"${x.name} = m.get(${keyFromField(x)}).flatMap(x => pushka.read[${x.tpt}](x))"
           } else {
             q"""
-              ${x.name} =
-                if (m.contains(${keyFromField(x)})) {
-                  pushka.read[${x.tpt}](m(${keyFromField(x)}))
-                } else {
-                  throw new pushka.PushkaException(
-                    ${className.toString} + " should contain " + ${keyFromField(x)})
+              ${x.name} = if (m.contains(${keyFromField(x)})) {
+                pushka.read[${x.tpt}](m(${keyFromField(x)}))
+              } else {
+                pushka.HasDefault[${x.tpt}] match {
+                  case None =>
+                    throw new pushka.PushkaException(
+                      ${className.toString} + " should contain " + ${keyFromField(x)})
+                  case Some(default) => default.value
                 }
-             """
+              }
+            """
           }
         }
         q"""
@@ -104,25 +82,25 @@ class pushka extends StaticAnnotation {
       case field :: Nil if !findAnnotationFlag("forceObject", annotations) ⇒
         q"pushka.write(value.${field.name})"
       case _ ⇒
-        def basicW(filed: ValDef) = {
-          val key = keyFromField(filed)
-          q"$key -> pushka.write(value.${filed.name})"
+        def basicW(field: ValDef) = {
+          val key = keyFromField(field)
+          q"$key -> pushka.write(value.${field.name})"
         }
-        val (nonOpts, opts) = fields.partition(!_.is[Option[_]])
-        val nonOptsWriters = nonOpts.map(x ⇒ q"b.append(${basicW(x)})")
-        val optsWriters = opts map { x ⇒
+        val writers = fields map { field ⇒
+          val t = field.tpt
+          val n = field.name
+          val w = basicW(field)
           q"""
-             if (config.leanOptions) {
-               if (value.${x.name}.nonEmpty) b.append(${basicW(x)})
-             } else {
-               b.append(${basicW(x)})
-             }
+            pushka.HasDefault[$t] match {
+              case Some(default) if !default.writeDefault && value.$n == default.value =>
+                // do nothing
+              case _ => b.append($w)
+            }
           """
         }
         q"""
           val b = scala.collection.mutable.Buffer.empty[(String, pushka.Ast)]
-          ..$optsWriters
-          ..$nonOptsWriters
+          ..$writers
           pushka.Ast.Obj(b.toMap)
         """
     }
@@ -134,7 +112,7 @@ class pushka extends StaticAnnotation {
       typeParams match {
         case Nil ⇒
           q"""
-            implicit def _rw(implicit config: pushka.Config = pushka.Config.default): pushka.RW[$className] = new pushka.RW[$className] {
+            implicit val _rw: pushka.RW[$className] = new pushka.RW[$className] {
               def read(value: pushka.Ast) = $reader
               def write(value: $className): pushka.Ast = $writer
             }
@@ -143,17 +121,18 @@ class pushka extends StaticAnnotation {
           @tailrec
           def makeRWsRec(i: Int, acc: List[Tree], tl: List[TypeName]): List[Tree] = tl match {
             case x :: xs ⇒
-              val (ri, wi) = (TermName("r" + i), TermName("w" + i))
+              val (ri, wi, di) = (TermName("r" + i), TermName("w" + i), TermName("d" + i))
               val r = q"$ri : pushka.Reader[$x]"
               val w = q"$wi : pushka.Writer[$x]"
-              makeRWsRec(i + 1, r :: w :: acc, xs)
+              val d = q"$di : pushka.HasDefault[$x]"
+              makeRWsRec(i + 1, d :: r :: w :: acc, xs)
             case Nil ⇒ acc
           }
           val defs = typeParams.map(x ⇒ TypeDef(Modifiers(), TypeName(x.name.toString), Nil, x.rhs))
           val params = defs.map(_.name)
-          val rws = makeRWsRec(0, Nil, params)
+          val rwds = makeRWsRec(0, Nil, params)
           q"""
-            implicit def _rw[..$defs](implicit ..$rws, config: pushka.Config = pushka.Config.default): pushka.RW[$className[..$params]] = {
+            implicit def _rw[..$defs](implicit ..$rwds): pushka.RW[$className[..$params]] = {
               new pushka.RW[$className[..$params]] {
                 def read(value: pushka.Ast) = $reader
                 def write(value: $className[..$params]): pushka.Ast = $writer
@@ -231,7 +210,7 @@ class pushka extends StaticAnnotation {
         // Case classes are matched by variable pattern (see bellow)
         // it disallow to match anything elese (SLS 8.1.1).
         // So we need to sort this list so that case objects stands in beginning
-        list.sortBy(_.isRight).toSeq
+        list.sortBy(_.isRight)
       }
 
       // Matching on pushka.Ast to find right reader
