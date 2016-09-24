@@ -40,7 +40,7 @@ import pushka.annotation._
   role: Role
 )
 
-@puska sealed trait Role
+@pushka sealed trait Role
 
 object Role {
   case object Moderator extends Role
