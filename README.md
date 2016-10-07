@@ -6,11 +6,11 @@ Pushka is a serialization library implemented without any runtime reflection. It
 
 # Motivation
 
-1. Most of the serialization libraries are writes case classes "as is". For example, if we have `Option` value it will be written with some kind of wrapper. In the case of sealed traits, most libraries write metadata: trait name and case class name. This makes JSON unreadable by human and makes it useless for creating public API. We want to achieve high human readability of output JSON: no wrappers if it possible, no metadata ever.
+1. The most of serialization libraries write case classes "as is". For example, if we have `Option` value it will be written with some kind of wrapper. In the case of sealed traits, most libraries write metadata: trait name and case class name. This makes JSON unreadable by human and makes it useless for creating public API. We want to achieve high human readability of output JSON: no wrappers if possible, no metadata ever.
 
-2. Codebase simplicity. In our work, we encountered that some libraries based on implicit macros (including shapeless based) are fails on our data. In this project, we want to make the code as simple as possible to find bugs faster.
+2. Codebase simplicity. In our work, we encountered that some libraries based on implicit macroses (including shapeless based) fails on our data. In this project, we want to make the code as simple as possible to find bugs more faster.
 
-3. High performance. Minimum runtime overhead. See [Boopickle benchmarks](http://ochrons.github.io/boopickle-perftest/).
+3. High performance. Minimum runtime overhead. See [Boopickle benchmarks](http://ochrons.github.io/boopickle-perftest/) for comparison with other similar libraries.
 
 
 # Usage
@@ -29,7 +29,7 @@ Pushka uses macro annotations which implemented in macro paradise plugin. Unfort
 ```scala
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 ```
-Let define types we want to write to JSON.
+Let's define types we want to write to JSON.
 
 ```scala
 import pushka.annotation._
@@ -48,7 +48,7 @@ object Role {
   case class Group(xs: Seq[Role]) extends Role
 }
 ```
-Ok. Now let create data and write it to JSON
+Ok. Now let's create data and write it into JSON
 
 ```scala
 import pushka.json._
@@ -69,7 +69,7 @@ println(write(data))
 }
 ```
 
-Ok. Change users role.
+Ok. Change user's role.
 
 ```scala
 data.copy(role = Role.Group(Role.Accountant, Role.Moderator))
@@ -120,7 +120,7 @@ assert {
 
 ### Case class default parameters
 
-That if we add the new field to class and try to read JSON written to KV storage with an old version of the class? An exception will be thrown. To avoid this behavior add the new field with a default value.
+What if we add the new field to class and try to read JSON written to KV storage with an old version of the class? An exception will be thrown. To avoid this behavior add the new field with a default value.
 
 ```scala
 @pushka case class User(
@@ -133,7 +133,7 @@ That if we add the new field to class and try to read JSON written to KV storage
 
 ### `@key` annotation
 
-Pushka allows defining the key that a field is serialized with via a `@key` annotation.
+Pushka allows to define the key that a field is serialized with via a `@key` annotation.
 
 ```scala
 @pushka
@@ -142,7 +142,7 @@ case class Log(@key("@ts") timestamp: String, message: String)
 
 ### `@forceObject` annotation
 
-Case classes with one field write without object wrapper by default. To avoid this behavior use `@forceObject` annotation.
+Case classes with one field are written without object wrapper by default. To avoid this behavior use `@forceObject` annotation.
 
 ```scala
 @pushka case class Id(value: String)
@@ -204,7 +204,7 @@ write(m)
 
 ### Custom readers and writers
 
-Sometimes we want to write objects in a special way.
+Sometimes we want to write objects in a special way. Just define your own reader/writer for your type.
 
 ```scala
 import pushka.RW
