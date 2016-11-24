@@ -65,7 +65,7 @@ lazy val json = crossProject.crossType(CrossType.Full).
     normalizedName := "pushka-json",
     unmanagedSourceDirectories in Test += baseDirectory.value / ".." / "test-src"
   ).
-  jvmSettings(libraryDependencies += "org.spire-math" %% "jawn-parser" % "0.8.4").
+  jvmSettings(libraryDependencies += "org.spire-math" %% "jawn-parser" % "0.10.4").
   dependsOn(core)
 
 lazy val jsonJS = json.js
@@ -73,6 +73,6 @@ lazy val jsonJVM = json.jvm
 
 publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
 
-crossScalaVersions := Seq("2.10.6", "2.11.8")
+crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0")
 
 publishArtifact := false

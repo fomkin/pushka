@@ -2,6 +2,8 @@ import org.scalatest._
 import pushka._
 import pushka.annotation.pushka
 
+import scala.annotation.StaticAnnotation
+
 object SealedTraitSpec {
 
   abstract class Rgb(r: Int, g: Int, b: Int)
@@ -33,10 +35,12 @@ object SealedTraitSpec {
 
   @pushka case class Container(user: User, anotherField: Int)
 
+  class theAnnotation(a: String, b: String) extends StaticAnnotation
+
   @pushka sealed trait Base
 
   object Base {
-    @deprecated("Some message", "Today")
+    @theAnnotation("Some message", "Today")
     case class Descendant(value: Int) extends Base
 
     object Descendant {
@@ -68,7 +72,8 @@ class SealedTraitSpec extends FlatSpec with Matchers {
     write(instance) should be(
       Ast.Obj(Map(
         "user" → Ast.Str("empty"),
-        "anotherField" → Ast.Num("10"))
+        "anotherField" → Ast.Num("10"
+        ))
       )
     )
   }
