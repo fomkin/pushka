@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/fomkin/pushka.svg?branch=develop)](https://travis-ci.org/fomkin/pushka) [![Join the chat at https://gitter.im/fomkin/pushka](https://badges.gitter.im/fomkin/pushka.svg)](https://gitter.im/fomkin/pushka?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Pushka is a serialization library implemented without any runtime reflection. It created to reach well human readability of output JSON and good performance. Pushka works well both on Scala (2.10, 2.11) and Scala.js.
+Pushka is a serialization library implemented without any runtime reflection. It created to reach well human readability of output JSON and good performance. Pushka works well both on Scala (2.10, 2.11, 2.12) and Scala.js.
 
 # Motivation
 
@@ -19,10 +19,10 @@ Add Pushka dependency to your project.
 
 ```scala
 // For Scala.js
-libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.7.1"
+libraryDependencies += "com.github.fomkin" %%% "pushka-json" % "0.8.0"
 
 // For Scala.jvm
-libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.7.1"
+libraryDependencies += "com.github.fomkin" %% "pushka-json" % "0.8.0"
 ```
 Pushka uses macro annotations which implemented in macro paradise plugin. Unfortunately, it can't be added transitively by Pushka dependency, so you need to plug it manually.
 
