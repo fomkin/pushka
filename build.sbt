@@ -1,3 +1,5 @@
+import sbtcrossproject.{crossProject, CrossType}
+
 val publishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
@@ -33,6 +35,7 @@ val publishSettings = Seq(
 val commonSettings = publishSettings ++ Seq(
   organization := "com.github.fomkin",
   version := "0.9.0-SNAPSHOT",
+  scalaVersion := "2.11.8",
   libraryDependencies += "org.scalatest" %%% "scalatest" % "3.0.0" % "test",
   scalacOptions ++= Seq(
     "-deprecation",
@@ -43,7 +46,8 @@ val commonSettings = publishSettings ++ Seq(
   )
 )
 
-lazy val core = crossProject.crossType(CrossType.Pure).
+lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).
+  crossType(CrossType.Pure).
   settings(commonSettings: _*).
   settings(
     normalizedName := "pushka-core",
@@ -54,25 +58,34 @@ lazy val core = crossProject.crossType(CrossType.Pure).
     ),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
     sourceGenerators in Compile <+= sourceManaged in Compile map GenTuples
-  )
+  ).  
+  nativeSettings(libraryDependencies -= "org.scalatest" %%% "scalatest" % "3.0.0" % "test")
 
 lazy val coreJS = core.js
 lazy val coreJVM = core.jvm
+lazy val coreNative = core.native
 
-lazy val json = crossProject.crossType(CrossType.Full).
+lazy val json = crossProject(JSPlatform, JVMPlatform, NativePlatform).
+  crossType(CrossType.Full).
   settings(commonSettings: _*).
   settings(
     normalizedName := "pushka-json",
     unmanagedSourceDirectories in Test += baseDirectory.value / ".." / "test-src"
   ).
   jvmSettings(libraryDependencies += "org.spire-math" %% "jawn-parser" % "0.10.4").
-  dependsOn(core)
+  nativeSettings(
+    libraryDependencies += "org.json4s" %% "json4s-native" % "3.5.1",
+    libraryDependencies -= "org.scalatest" %%% "scalatest" % "3.0.0" % "test"
+  ).
+  dependsOn(core).
+  nativeSettings()
 
 lazy val jsonJS = json.js
 lazy val jsonJVM = json.jvm
+lazy val jsonNative = json.native
 
 publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
 
-crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0")
+crossScalaVersions := Seq("2.11.8", "2.12.1")
 
 publishArtifact := false
