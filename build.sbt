@@ -46,6 +46,14 @@ val commonSettings = publishSettings ++ Seq(
   )
 )
 
+val nativeSettings = Seq(
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  libraryDependencies -= "org.scalatest" %%% "scalatest" % "3.0.0" % "test",
+  publishArtifact in (Compile, packageDoc) := false,
+  publishArtifact in packageDoc := false,
+  sources in (Compile, doc) := Seq.empty    
+)
+
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).
   crossType(CrossType.Pure).
   settings(commonSettings: _*).
@@ -59,7 +67,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
     sourceGenerators in Compile <+= sourceManaged in Compile map GenTuples
   ).  
-  nativeSettings(libraryDependencies -= "org.scalatest" %%% "scalatest" % "3.0.0" % "test")
+  nativeSettings(nativeSettings: _*)
 
 lazy val coreJS = core.js
 lazy val coreJVM = core.jvm
@@ -73,16 +81,20 @@ lazy val json = crossProject(JSPlatform, JVMPlatform, NativePlatform).
     unmanagedSourceDirectories in Test += baseDirectory.value / ".." / "test-src"
   ).
   jvmSettings(libraryDependencies += "org.spire-math" %% "jawn-parser" % "0.10.4").
-  nativeSettings(
-    libraryDependencies += "org.json4s" %% "json4s-native" % "3.5.1",
-    libraryDependencies -= "org.scalatest" %%% "scalatest" % "3.0.0" % "test"
-  ).
-  dependsOn(core).
-  nativeSettings()
+  nativeSettings(nativeSettings: _*).
+  nativeSettings(libraryDependencies += "org.json4s" %% "json4s-native" % "3.5.1").
+  dependsOn(core)
 
 lazy val jsonJS = json.js
 lazy val jsonJVM = json.jvm
 lazy val jsonNative = json.native
+
+lazy val testNative = Project("testNative", file("test-native")).
+  enablePlugins(ScalaNativePlugin).
+  settings(commonSettings: _*).
+  settings(nativeSettings: _*).
+  settings(normalizedName := "pushka-test-native").  
+  dependsOn(coreNative, jsonNative)
 
 publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
 

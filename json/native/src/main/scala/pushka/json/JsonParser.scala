@@ -7,7 +7,6 @@ import org.json4s.native._
 import org.json4s.native.JsonMethods
 
 final class JsonParser extends Parser[String] {
-
   private[this] def readAst(value: JValue): Ast = value match {
     case JInt(x) => Ast.Num(x.toString)
     case JDecimal(x) => Ast.Num(x.toString)
