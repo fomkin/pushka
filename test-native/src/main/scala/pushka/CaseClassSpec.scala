@@ -1,7 +1,5 @@
-package pushka 
+package pushka
 
-import pushka._
-import pushka.json._
 import pushka.annotation._
 
 // import scala.util.{Try, Success, Failure}
@@ -39,9 +37,9 @@ object CaseClassSpec {
       val invalidAst = Ast.Arr(Seq())
       val exception = Try { read[MyCaseClass](invalidAst) } 
       //exception.message should be(s"Error while reading AST $invalidAst to MyCaseClass")
-    }*/
+    }
 
-    /*{
+    {
       val invalidAst = Ast(
         "x" → pushka.Ast.Num(10),
         "z" → pushka.Ast.Str("vodka")

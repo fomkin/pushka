@@ -98,6 +98,6 @@ lazy val testNative = Project("testNative", file("test-native")).
 
 publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))
 
-crossScalaVersions := Seq("2.11.8", "2.12.1")
+crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.1")
 
 publishArtifact := false

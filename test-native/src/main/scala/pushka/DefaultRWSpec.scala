@@ -1,8 +1,5 @@
 package pushka
 
-import pushka._
-import pushka.json._
-import pushka.annotation._
 import pushka.annotation.pushka
 
 // import scala.util.{Try, Success, Failure}
