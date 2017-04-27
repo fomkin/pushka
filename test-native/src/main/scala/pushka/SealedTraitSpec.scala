@@ -2,18 +2,10 @@ package pushka
 
 import pushka.annotation._
 
-// import scala.util.{Try, Success, Failure}
+import scala.util.Try
 import scala.annotation.StaticAnnotation
 
-/**
- * Commented out test cases due to:
- * [error] cannot link: @java.util.regex.Pattern
- * [error] cannot link: @java.util.regex.Pattern$
- * [error] cannot link: @java.util.regex.Pattern$::compile_class.java.lang.String_class.java.util.regex.Pattern
- * [error] cannot link: @java.util.regex.Pattern::split_trait.java.lang.CharSequence_class.ssnr.ObjectArray
- * [error] unable to link
-*/
-object SealedTraitSpec {
+object SealedTraitSpec extends TestMethods {
 
   abstract class Rgb(r: Int, g: Int, b: Int)
 
@@ -92,14 +84,14 @@ object SealedTraitSpec {
       write[Base](Base.Descendant(42))
     }
 
-    /*{
+    {
       assert(read[Color](Ast.Str("red")) == Color.Red)
     }
 
     {
       val invalidAst = Ast("foo" → "bar")
       val exception = Try { read[Color](invalidAst) }
-      // exception.message should be(s"Error while reading AST $invalidAst to Color")
-    }*/
+      exception.exceptionAssert(s"Error while reading AST $invalidAst to Color")
+    }
   }
 }

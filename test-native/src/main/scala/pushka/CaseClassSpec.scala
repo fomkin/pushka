@@ -2,17 +2,9 @@ package pushka
 
 import pushka.annotation._
 
-// import scala.util.{Try, Success, Failure}
+import scala.util.Try
 
-/**
- * Commented out test cases due to:
- * [error] cannot link: @java.util.regex.Pattern
- * [error] cannot link: @java.util.regex.Pattern$
- * [error] cannot link: @java.util.regex.Pattern$::compile_class.java.lang.String_class.java.util.regex.Pattern
- * [error] cannot link: @java.util.regex.Pattern::split_trait.java.lang.CharSequence_class.ssnr.ObjectArray
- * [error] unable to link
-*/
-object CaseClassSpec {
+object CaseClassSpec extends TestMethods {
   @pushka case class MyCaseClass(x: Int, y: Int, z: String)
   @pushka case class MyCaseClass2(x: Option[String], y: String)
   @pushka case class MyCaseClass3(x: (String, Double), y: String)
@@ -33,10 +25,10 @@ object CaseClassSpec {
       assert(write(instance) == pushka.Ast.Obj(m))
     }
 
-    /*{
+    {
       val invalidAst = Ast.Arr(Seq())
-      val exception = Try { read[MyCaseClass](invalidAst) } 
-      //exception.message should be(s"Error while reading AST $invalidAst to MyCaseClass")
+      val exception = Try { read[MyCaseClass](invalidAst) }
+      exception.exceptionAssert(s"Error while reading AST $invalidAst to MyCaseClass")
     }
 
     {
@@ -45,24 +37,24 @@ object CaseClassSpec {
         "z" → pushka.Ast.Str("vodka")
       )
       val exception = Try { read[MyCaseClass](invalidAst) }
-      //exception.message should be(s"MyCaseClass should contain y")
-    }*/
+      exception.exceptionAssert("MyCaseClass should contain y")
+    }
 
     {
       val source = Id[String](10)
       assert(write[Id[String]](source) == Ast.Num(10))
     }
 
-    /*{
+    {
       val source = Ast.Num(10)
       assert(read[Id[String]](source) == Id[String](10))
-    }*/
+    }
 
-    /*{
+    {
       val invalidAst = Ast.True
       val exception = Try { read[Id[String]](invalidAst) }
-      // exception.message should be(s"Error while reading AST $invalidAst to Int")
-    }*/
+      exception.exceptionAssert(s"Error while reading AST $invalidAst to Int")
+    }
 
     {
       val source = Point[Float](10, 10)
@@ -70,24 +62,24 @@ object CaseClassSpec {
       assert(write(source) == pattern)
     }
 
-    /*{
+    {
       val source = Ast("x" → 10.0, "y" → 10.0)
       val pattern = Point[Float](10, 10)
       assert(read[Point[Float]](source) == pattern)
-    }*/
+    }
 
-    /*{
+    {
       val invalidAst = Ast.Null
       val exception = Try { read[Point[Float]](invalidAst) }
-      // exception.message should be(s"Error while reading AST $invalidAst to Point")
-    }*/
+      exception.exceptionAssert(s"Error while reading AST $invalidAst to Point")
+    }
 
     {
       val pattern = Ast.Obj(Map("y" → Ast.Str("vodka")))
       assert(write[MyCaseClass2](MyCaseClass2(None, "vodka")) == pattern)
     }
 
-    /*{
+    {
       val source = Ast.Obj(Map("y" → Ast.Str("vodka")))
       val pattern = MyCaseClass2(None, "vodka")
       assert(read[MyCaseClass2](source) == pattern)
@@ -102,8 +94,8 @@ object CaseClassSpec {
     {
       val invalidAst = Ast.Num(5)
       val exception = Try { read[MyCaseClass2](invalidAst) }
-      //exception.message should be(s"Error while reading AST $invalidAst to MyCaseClass2")
-    }*/
+      exception.exceptionAssert(s"Error while reading AST $invalidAst to MyCaseClass2")
+    }
 
     {
       val pattern = Ast.Obj(Map(
@@ -116,7 +108,7 @@ object CaseClassSpec {
       assert(write(MyCaseClass3(("bear", 9d), "vodka")) == pattern)
     }
 
-    /*{
+    {
       val source = Ast.Obj(Map(
         "x" → Ast.Arr(Seq(
           Ast.Str("bear"),
@@ -137,7 +129,7 @@ object CaseClassSpec {
     {
       val invalidAst = Ast.False
       val exception = Try { read[WithDefaultParams](invalidAst) }
-      // exception.message should be(s"Error while reading AST $invalidAst to WithDefaultParams")
+      exception.exceptionAssert(s"Error while reading AST $invalidAst to WithDefaultParams")
     }
 
     {
@@ -154,8 +146,8 @@ object CaseClassSpec {
     {
       val invalidAst = Ast.True
       val exception = Try { read[WithKeyAnnotation](invalidAst) }
-      // exception.message should be(s"Error while reading AST $invalidAst to WithKeyAnnotation")
-    }*/
+      exception.exceptionAssert(s"Error while reading AST $invalidAst to WithKeyAnnotation")
+    }
 
     {
       val source = AppleReceipt("hello")
@@ -163,10 +155,10 @@ object CaseClassSpec {
       assert(write(source) == pattern)
     }
 
-    /*{
+    {
       val pattern = AppleReceipt("hello")
       val source = Ast("receipt-data" -> "hello")
       assert(read[AppleReceipt](source) == pattern)
-    }*/
+    }
   }  
 }
